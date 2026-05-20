@@ -1,0 +1,354 @@
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD PREMIUM STYLES
+   Animations, gradients, et effets visuels industriels
+   ═══════════════════════════════════════════════════════════ */
+
+/* ━━━ ANIMATIONS AVANCÉES ━━━ */
+
+@keyframes dashboard-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes dashboard-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(79, 172, 254, 0.4);
+  }
+}
+
+@keyframes dashboard-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes dashboard-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes dashboard-slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ━━━ UTILITY CLASSES ━━━ */
+
+.dashboard-header {
+  animation: dashboard-slide-in-down 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+}
+
+.dashboard-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(79, 172, 254, 0.3);
+  box-shadow: 0 12px 32px rgba(79, 172, 254, 0.15);
+}
+
+.dashboard-card.elevated {
+  box-shadow: 0 20px 48px rgba(79, 172, 254, 0.2);
+}
+
+/* ━━━ KPI CARD EFFECTS ━━━ */
+
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(79, 172, 254, 0.1);
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.05), rgba(34, 197, 94, 0.05));
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.kpi-card:hover::before {
+  opacity: 1;
+}
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+/* ━━━ LARGE CO2 CARD ━━━ */
+
+.co2-card-large {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.co2-card-large::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.2), transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1), transparent 50%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ━━━ PROGRESS BAR ANIMATION ━━━ */
+
+.co2-progress {
+  position: relative;
+  height: 0.625rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.co2-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.co2-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: dashboard-shimmer 2s infinite;
+  background-size: 1000px 100%;
+}
+
+/* ━━━ SENSOR STATUS PANEL ━━━ */
+
+.sensor-status-item {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(79, 172, 254, 0.1);
+  background: rgba(79, 172, 254, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sensor-status-item:hover {
+  border-color: rgba(79, 172, 254, 0.3);
+  background: rgba(79, 172, 254, 0.1);
+  transform: translateX(4px);
+}
+
+.sensor-status-item.good {
+  border-color: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.sensor-status-item.good:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.sensor-status-item.warning {
+  border-color: rgba(234, 179, 8, 0.2);
+  background: rgba(234, 179, 8, 0.05);
+}
+
+.sensor-status-item.warning:hover {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.sensor-status-item.critical {
+  border-color: rgba(220, 38, 38, 0.2);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.sensor-status-item.critical:hover {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* ━━━ HEADER COMPACT ━━━ */
+
+.dashboard-header-compact {
+  border-bottom: 1px solid rgba(79, 172, 254, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(79, 172, 254, 0.03) 0%,
+    rgba(34, 197, 94, 0.01) 100%
+  );
+  backdrop-filter: blur(10px);
+}
+
+/* ━━━ STATUS BADGE INDICATOR ━━━ */
+
+.status-pulse {
+  animation: dashboard-pulse-ring 2s infinite;
+}
+
+.status-dot-live {
+  animation: dashboard-float 2s ease-in-out infinite;
+}
+
+/* ━━━ CHARTS CONTAINER ━━━ */
+
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ━━━ RESPONSIVE GRID ━━━ */
+
+.dashboard-grid-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-grid-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ━━━ DARK MODE ADJUSTMENTS ━━━ */
+
+.dark .dashboard-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.3));
+  border: 1px solid rgba(79, 172, 254, 0.15);
+}
+
+.dark .co2-card-large::before {
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1), transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05), transparent 50%);
+}
+
+.dark .sensor-status-item {
+  border-color: rgba(79, 172, 254, 0.15);
+  background: rgba(79, 172, 254, 0.08);
+}
+
+.dark .sensor-status-item:hover {
+  border-color: rgba(79, 172, 254, 0.25);
+  background: rgba(79, 172, 254, 0.15);
+}
+
+/* ━━━ ACCESSIBILITY - REDUCED MOTION ━━━ */
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card,
+  .kpi-card,
+  .co2-card-large,
+  .sensor-status-item {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ━━━ LOADING STATES ━━━ */
+
+.dashboard-skeleton {
+  background: linear-gradient(90deg, rgba(79, 172, 254, 0.1), rgba(79, 172, 254, 0.2), rgba(79, 172, 254, 0.1));
+  background-size: 200% 100%;
+  animation: loading-shimmer 2s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTS - Responsive Breakpoints
+   ═══════════════════════════════════════════════════════════ */
+
+/* Mobile: < 640px */
+@media (max-width: 639px) {
+  .dashboard-grid-main {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: 640px - 1024px */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-grid-main {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: > 1024px */
+@media (min-width: 1024px) {
+  .dashboard-grid-main {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .dashboard-grid-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

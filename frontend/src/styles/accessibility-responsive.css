@@ -1,0 +1,198 @@
+/**
+ * =============================================================================
+ * PERFORMANCE FIX 3.3 & 3.4: RESPONSIVE & ACCESSIBILITY GUIDELINES
+ * =============================================================================
+ * Guidelines for responsive design and web accessibility improvements
+ * =============================================================================
+ */
+
+/* RESPONSIVE BREAKPOINTS (Tailwind standard) */
+/* 
+  xs: 320px  (mobile)
+  sm: 640px  (small mobile)
+  md: 768px  (tablet)
+  lg: 1024px (desktop)
+  xl: 1280px (large desktop)
+  2xl: 1536px (extra large)
+*/
+
+/* ACCESSIBILITY IMPROVEMENTS */
+
+/* 1. Skip Links (for keyboard navigation) */
+.skip-link {
+  @apply absolute top-0 left-0 px-4 py-2 bg-blue-600 text-white -translate-y-12 focus:translate-y-0 transition-transform z-50;
+}
+
+/* 2. Focus indicators (keyboard navigation visibility) */
+*:focus-visible {
+  @apply outline outline-2 outline-blue-500 outline-offset-2;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  @apply outline outline-2 outline-blue-500 outline-offset-2;
+}
+
+/* 3. Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    @apply animate-none transition-none !important;
+  }
+}
+
+/* 4. High contrast support */
+@media (prefers-contrast: more) {
+  body {
+    @apply contrast-125;
+  }
+}
+
+/* 5. Screen reader only (hide visually but keep in accessibility tree) */
+.sr-only {
+  @apply absolute w-1 h-1 p-0 -m-1 overflow-hidden border-0 whitespace-nowrap;
+}
+
+.sr-only:focus {
+  @apply static w-auto h-auto overflow-visible m-0 whitespace-normal;
+}
+
+/* RESPONSIVE PATTERNS */
+
+/* Mobile-first approach: base styles are mobile, add larger breakpoints as needed */
+
+/* Container queries support (modern browser feature) */
+@supports (container-type: inline-size) {
+  .responsive-grid {
+    container-type: inline-size;
+  }
+
+  @container (min-width: 320px) {
+    .responsive-grid > * {
+      @apply grid-cols-1;
+    }
+  }
+
+  @container (min-width: 640px) {
+    .responsive-grid > * {
+      @apply grid-cols-2;
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .responsive-grid > * {
+      @apply grid-cols-3;
+    }
+  }
+}
+
+/* Fallback: standard media queries */
+@media (max-width: 639px) {
+  /* Mobile optimizations */
+  .mobile-hide {
+    @apply hidden;
+  }
+  
+  .text-responsive-lg {
+    @apply text-2xl;
+  }
+  
+  .padding-responsive {
+    @apply px-4 py-2;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Tablet optimizations */
+  .tablet-show {
+    @apply block;
+  }
+  
+  .text-responsive-lg {
+    @apply text-3xl;
+  }
+  
+  .padding-responsive {
+    @apply px-6 py-4;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop optimizations */
+  .desktop-show {
+    @apply block;
+  }
+  
+  .text-responsive-lg {
+    @apply text-4xl;
+  }
+  
+  .padding-responsive {
+    @apply px-8 py-6;
+  }
+}
+
+/* TOUCH TARGET SIZE (minimum 48x48px for accessibility) */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"] {
+  @apply min-h-12 min-w-12;
+}
+
+/* FORM ACCESSIBILITY */
+label {
+  @apply block font-medium text-gray-700 dark:text-gray-300 mb-2;
+}
+
+input:invalid:not(:placeholder-shown),
+textarea:invalid:not(:placeholder-shown),
+select:invalid:not(:placeholder-shown) {
+  @apply border-red-500 focus:ring-red-500;
+}
+
+/* Error messages */
+.form-error {
+  @apply text-red-600 dark:text-red-400 text-sm mt-1;
+  role: alert;
+}
+
+/* Help text */
+.form-help {
+  @apply text-gray-600 dark:text-gray-400 text-sm mt-1;
+}
+
+/* IMAGE ACCESSIBILITY */
+img {
+  @apply block;
+}
+
+/* Avoid layout shift for images */
+img[width],
+img[height] {
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* SEMANTIC HTML IMPROVEMENTS */
+article,
+aside,
+footer,
+header,
+nav,
+main,
+section {
+  @apply block;
+}
+
+/* Ensure sufficient color contrast */
+a {
+  @apply text-blue-600 dark:text-blue-400 underline;
+}
+
+a:visited {
+  @apply text-purple-600 dark:text-purple-400;
+}

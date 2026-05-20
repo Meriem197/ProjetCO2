@@ -1,0 +1,78 @@
+# Ignorer les fichiers textes inutiles ou de logs (ex: rapports, logs d'erreurs)
+*.txt
+**/*.log
+**/*.txt
+
+# Sauf les fichiers de dépendances importants
+!**/requirements.txt
+
+# ==============================================================================
+# CONFIGURATION PYDATA (Python)
+# ==============================================================================
+
+# Ignorer les caches Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Ignorer les environnements virtuels Python (si jamais tu en crées un)
+**/venv/
+**/.venv/
+**/env/
+
+# ==============================================================================
+# CONFIGURATION FRONTEND & BACKEND (Node.js / JavaScript)
+# ==============================================================================
+
+# Ignorer les dossiers de dépendances lourds
+**/node_modules/
+**/.pnp
+**/.pnp.js
+
+# Ignorer les dossiers de build (si applicables)
+**/dist/
+**/build/
+
+# ==============================================================================
+# CONFIGURATION ESPCODE (PlatformIO / Arduino)
+# ==============================================================================
+
+# Ignorer les fichiers de build locaux et de configuration d'IDE de PlatformIO
+**/.pio/
+**/.clang_complete
+**/.gcc-flags.json
+**/unins000.*
+
+
+# Fichiers d'environnement (Sécurité : contient tes clés secrètes/API)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Ne PAS ignorer .env.example car il sert de modèle pour les autres
+
+# Logs et rapports
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+
+# Fichiers système ou d'éditeurs (optionnel mais recommandé)
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# PlatformIO temporaires et builds
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+
+# Fichiers de configuration locale de l'éditeur (VS Code)
+.vscode/.provider
+.vscode/extensions.json
+*.md

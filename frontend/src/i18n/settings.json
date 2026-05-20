@@ -1,0 +1,122 @@
+{
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Configuration du système de surveillance CO₂",
+
+    "tabs": {
+      "positioning": "Positionnement & GPS",
+      "thresholds": "Seuils & IA",
+      "iot": "ESP32 & IoT",
+      "users": "Utilisateurs & Droits"
+    },
+
+    "common": {
+      "profile": "Profil",
+      "access": "Accès",
+      "loading": "Chargement…",
+      "error": "Erreur",
+      "save": "Enregistrer",
+      "refresh": "Rafraîchir",
+      "readonly": "Lecture seule",
+      "admin_only": "Réservé à l’administrateur",
+      "admin_or_tech": "Réservé à l’administrateur et au technicien",
+      "client_hidden": "Masqué pour le client"
+    },
+
+    "positioning": {
+      "title": "Gestion du positionnement GPS",
+      "desc": "Le système compare les emplacements et fixe l’endroit optimal.",
+
+      "zones_testees": "Zones testées",
+      "zone": "Zone",
+      "score": "Score de pertinence",
+      "recommended": "Recommandé",
+
+      "fix_position": "Valider et fixer la position définitive",
+
+      "gps_reference": "Coordonnées GPS de référence",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+
+      "geofencing": "Zone de tolérance (Géofencing)",
+      "radius_m": "Rayon (m)",
+      "radius_hint": "De 5 à 30 mètres",
+      "movement_alert": "Alerte critique de déplacement suspect activée"
+    },
+
+    "thresholds": {
+      "title": "Seuils CO₂ & Intelligence artificielle",
+      "desc": "Configurez les niveaux d’alerte et l’horizon de prédiction.",
+
+      "limit_good": "Limite Sain / Normal (ppm)",
+      "limit_warning": "Limite Alerte / Moyen (ppm)",
+      "limit_critical": "Limite Critique (ppm)",
+
+      "model": "Modèle algorithmique actif",
+      "horizon": "Horizon de prédiction (minutes)",
+
+      "badges": {
+        "good": "Sain",
+        "warning": "Alerte",
+        "critical": "Critique"
+      }
+    },
+
+    "iot": {
+      "title": "Configuration matérielle ESP32 & communication IoT",
+      "desc": "Réseau, MQTT et diagnostic du dispositif.",
+
+      "sampling": "Fréquence d’échantillonnage",
+      "sampling_s": "secondes",
+
+      "wifi_ssid": "SSID Wi‑Fi",
+      "wifi_password": "Mot de passe Wi‑Fi",
+
+      "mqtt_host": "Adresse du broker MQTT",
+      "mqtt_port": "Port MQTT",
+      "mqtt_topic": "Topics de publication/souscription",
+
+      "diagnostics": "Outils de diagnostic",
+      "ping": "Ping matériel",
+      "calibrate": "Calibrer capteur (point zéro)",
+
+      "results": {
+        "rssi": "RSSI (dBm)",
+        "battery": "Batterie (%)",
+        "last_measure": "Dernière mesure",
+        "mqtt_status": "État MQTT"
+      },
+
+      "not_supported": "Fonction non supportée par le firmware actuel.",
+      "use_mqtt_status": "Affichage de l’état MQTT uniquement (ping/calibration indisponibles côté ESP32 actuel)."
+    },
+
+    "users": {
+      "title": "Gestion des utilisateurs & droits d’accès",
+      "desc": "Table et modification des rôles.",
+
+      "table": {
+        "name": "Nom",
+        "email": "Email",
+        "role": "Rôle",
+        "action": "Action"
+      },
+
+      "invite": {
+        "name": "Nom",
+        "email": "Email",
+        "role": "Rôle",
+        "button": "Inviter"
+      },
+
+      "roles": {
+        "ADMIN": "Administrateur",
+        "TECHNICIAN": "Technicien",
+        "CLIENT": "Client"
+      },
+
+      "forbidden": "403 — Accès interdit."
+    }
+  }
+}
+

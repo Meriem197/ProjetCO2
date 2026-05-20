@@ -1,0 +1,116 @@
+@layer components {
+  /* =========================================================================
+     INDUSTRIEL FUTURISTE SOMBRE (“NUAGE D’IA”) — UI UTILITIES
+     - Inputs “pilule” (compact, glass, focus cyan)
+     - Boutons Ghost (outline fin -> remplissage au hover)
+     - Tables/onglets compacts (gap 8px, paddings réduits)
+     ========================================================================= */
+
+  .ui-pill {
+    @apply w-full rounded-full border border-border/60 bg-input/60 px-4 py-2 text-sm outline-none;
+    @apply backdrop-blur-xl;
+    @apply focus:border-primary/70 focus:ring-2 focus:ring-primary/20;
+    @apply dark:bg-slate-950/30 dark:border-white/10;
+  }
+
+  .ui-pill--sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .ui-pill--mono {
+    @apply font-mono tabular-nums;
+  }
+
+  .ui-label {
+    @apply mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .ui-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border/60 bg-transparent px-4 py-2 text-xs font-semibold;
+    @apply text-muted-foreground transition;
+    @apply hover:bg-accent/10 hover:text-foreground;
+    @apply disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted-foreground;
+  }
+
+  .ui-ghost--primary {
+    @apply border-primary/40 text-primary;
+    @apply hover:bg-primary/10;
+  }
+
+  .ui-ghost--critical {
+    @apply border-status-critical/35 text-status-critical;
+    @apply hover:bg-status-critical/10;
+  }
+
+  .ui-badge {
+    @apply inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-2.5 py-1 text-[11px] font-semibold;
+  }
+
+  .ui-section-title {
+    @apply text-sm font-extrabold tracking-wider;
+  }
+
+  .ui-grid-compact {
+    @apply grid gap-2;
+  }
+
+  /* Table dense (monitoring industriel) */
+  .ui-table {
+    @apply w-full overflow-hidden rounded-2xl border border-border/60;
+    @apply bg-background/30;
+  }
+
+  .ui-table__head {
+    @apply grid items-center gap-0 border-b border-border/60 bg-muted/30 px-4 py-3;
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .ui-table__row {
+    @apply w-full text-left grid items-center gap-0 px-4 py-3;
+    @apply border-b border-border/40 last:border-b-0;
+    @apply transition hover:bg-accent/10;
+  }
+
+  /* Onglets verticaux (Paramètres) */
+  .ui-vtabs {
+    @apply grid gap-3 lg:grid-cols-[240px_1fr];
+  }
+
+  .ui-vtabs__nav {
+    @apply grid gap-2;
+  }
+
+  .ui-vtab {
+    @apply w-full rounded-2xl border border-border/60 bg-card/30 px-4 py-3 text-left;
+    @apply transition;
+    @apply hover:bg-accent/10;
+  }
+
+  .ui-vtab[aria-selected="true"] {
+    @apply border-primary/50 bg-primary/10;
+  }
+
+  .ui-vtab__title {
+    @apply text-xs font-extrabold uppercase tracking-wider;
+  }
+
+  .ui-vtab__desc {
+    @apply mt-1 text-xs text-muted-foreground;
+  }
+
+  /* “Neon switch” (checkbox stylé) */
+  .ui-switch {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full border border-border/60 bg-muted/40 transition;
+  }
+  .ui-switch[data-checked="true"] {
+    @apply border-primary/50 bg-primary/20;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12), 0 0 24px hsl(var(--primary) / 0.18);
+  }
+  .ui-switch__dot {
+    @apply inline-block h-5 w-5 translate-x-0.5 rounded-full bg-foreground/90 transition;
+  }
+  .ui-switch[data-checked="true"] .ui-switch__dot {
+    @apply translate-x-5 bg-primary;
+  }
+}
+

@@ -1,0 +1,131 @@
+{
+  "dashboard": {
+    "title": "Salle de contrôle",
+    "subtitle": "Vue temps réel du capteur principal"
+  },
+
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "monitoring": "Surveillance",
+    "prediction": "Prédiction IA",
+    "classification": "Classification",
+    "alerts": "Alertes",
+    "placement": "Placement IA",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+
+  "status": {
+    "realtime": "Temps réel",
+    "reconnecting": "Reconnexion...",
+    "update": "MAJ",
+    "battery": "Batterie",
+    "wifi": "Signal Wi-Fi",
+    "mqtt": "MQTT",
+    "dark_mode": "Mode sombre",
+    "light_mode": "Mode clair",
+    "active": "Actif"
+  },
+
+  "auth": {
+    "login_title": "Se connecter",
+    "login_subtitle": "Accédez à la plateforme AirSense IoT",
+    "register_title": "Créer un compte",
+    "register_subtitle": "Configurez votre accès à AirSense IoT",
+    "create_account": "Créer un compte",
+    "logout": "Se déconnecter",
+    "email": "Email professionnel",
+    "password": "Mot de passe",
+    "confirm_password": "Confirmer le mot de passe",
+    "full_name": "Nom complet",
+    "role": "Rôle"
+  },
+
+  "monitoring": {
+    "title": "Surveillance",
+    "subtitle": "Analyse historique et placement des capteurs",
+    "main_sensor": "Capteur principal",
+    "export_csv": "Exporter CSV",
+    "pdf_report": "Rapport PDF",
+    "minimum": "Minimum",
+    "average": "Moyenne",
+    "maximum": "Maximum",
+    "history_24h": "Évolution CO₂ — 24 dernières heures",
+    "history_desc": "Mesures CO₂ glissantes — pas 5 min"
+  },
+
+  "prediction": {
+    "title": "Prédiction IA",
+    "subtitle": "Projection basée sur les mesures réelles disponibles",
+    "active_model": "Modèle actif",
+    "model_name": "Modèle prédictif côté serveur",
+    "mae": "MAE",
+    "mae_desc": "Erreur absolue moyenne",
+    "rmse": "RMSE",
+    "rmse_desc": "Erreur quadratique moyenne",
+    "estimated_accuracy": "Précision estimée",
+    "sliding_validation": "Validation glissante",
+    "real_vs_prediction": "Réel vs Prédiction",
+    "real": "Réel",
+    "predicted": "Prédit",
+    "confidence_interval": "Intervalle de confiance 95%",
+    "error_loading": "Impossible de charger les résultats IA"
+  },
+
+  "classification": {
+    "title": "Classification",
+    "subtitle": "État qualitatif de l’air détecté par le modèle",
+    "current_state": "État courant",
+    "healthy_air": "Air sain",
+    "medium_air": "Qualité moyenne",
+    "critical": "Critique",
+    "occurrence_frequency": "Fréquence d’occurrence — 24h",
+    "history": "Historique de classification",
+    "timestamp": "Horodatage",
+    "class": "Classe"
+  },
+
+  "alerts": {
+    "title": "Alertes",
+    "subtitle": "Centre de notifications critiques temps réel",
+    "active": "Actives",
+    "acknowledged": "Acquittées",
+    "resolved": "Résolues",
+    "all": "Toutes",
+    "date": "Date",
+    "level": "Niveau",
+    "message": "Message",
+    "co2": "CO₂",
+    "status": "Statut",
+    "empty": "Aucune alerte pour ce filtre."
+  },
+
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Vos informations et sécurité du compte",
+    "personal_info": "Informations personnelles",
+    "save_profile": "Enregistrer le profil",
+    "change_password": "Changement de mot de passe",
+    "current_password": "Actuel",
+    "new_password": "Nouveau",
+    "confirmation": "Confirmation",
+    "update_password": "Mettre à jour"
+  },
+
+  "sensors": {
+    "current_co2": "Concentration CO₂ actuelle",
+    "critical_threshold": "Seuil critique",
+    "sensor_status": "Statut capteur",
+    "seen_ago": "Vu il y a",
+    "firmware": "Firmware",
+    "avg_24h": "Moyenne 24h",
+    "max_24h": "Maximum 24h",
+    "active_alerts": "Alertes actives"
+  },
+
+  "errors": {
+    "data_loading": "Erreur de chargement des données",
+    "no_data": "Aucune donnée disponible",
+    "no_data_desc": "Aucune mesure CO₂ n’a été reçue pour ce capteur dans la période sélectionnée."
+  }
+}

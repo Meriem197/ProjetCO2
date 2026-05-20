@@ -1,0 +1,131 @@
+{
+  "dashboard": {
+    "title": "غرفة التحكم",
+    "subtitle": "عرض فوري للحساس الرئيسي"
+  },
+
+  "sidebar": {
+    "dashboard": "لوحة التحكم",
+    "monitoring": "المراقبة",
+    "prediction": "تنبؤ الذكاء الاصطناعي",
+    "classification": "التصنيف",
+    "alerts": "التنبيهات",
+    "placement": "توزيع الحساسات",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات"
+  },
+
+  "status": {
+    "realtime": "مباشر",
+    "reconnecting": "إعادة الاتصال...",
+    "update": "تحديث",
+    "battery": "البطارية",
+    "wifi": "إشارة الواي فاي",
+    "mqtt": "MQTT",
+    "dark_mode": "الوضع الداكن",
+    "light_mode": "الوضع الفاتح",
+    "active": "نشط"
+  },
+
+  "auth": {
+    "login_title": "تسجيل الدخول",
+    "login_subtitle": "الدخول إلى منصة AirSense IoT",
+    "register_title": "إنشاء حساب",
+    "register_subtitle": "إعداد صلاحية الوصول إلى AirSense IoT",
+    "create_account": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني المهني",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "full_name": "الاسم الكامل",
+    "role": "الدور"
+  },
+
+  "monitoring": {
+    "title": "المراقبة",
+    "subtitle": "تحليل السجل التاريخي وتوزيع الحساسات",
+    "main_sensor": "الحساس الرئيسي",
+    "export_csv": "تصدير CSV",
+    "pdf_report": "تقرير PDF",
+    "minimum": "الحد الأدنى",
+    "average": "المتوسط",
+    "maximum": "الحد الأقصى",
+    "history_24h": "تطور CO₂ — آخر 24 ساعة",
+    "history_desc": "قياسات CO₂ المتتابعة — كل 5 دقائق"
+  },
+
+  "prediction": {
+    "title": "تنبؤ الذكاء الاصطناعي",
+    "subtitle": "توقعات مبنية على القياسات الحقيقية المتوفرة",
+    "active_model": "النموذج النشط",
+    "model_name": "نموذج تنبؤ من الخادم",
+    "mae": "MAE",
+    "mae_desc": "متوسط الخطأ المطلق",
+    "rmse": "RMSE",
+    "rmse_desc": "الجذر التربيعي لمتوسط مربع الخطأ",
+    "estimated_accuracy": "الدقة التقديرية",
+    "sliding_validation": "التحقق المتحرك",
+    "real_vs_prediction": "الحقيقي مقابل التنبؤ",
+    "real": "حقيقي",
+    "predicted": "متوقع",
+    "confidence_interval": "فترة ثقة 95%",
+    "error_loading": "تعذر تحميل نتائج الذكاء الاصطناعي"
+  },
+
+  "classification": {
+    "title": "التصنيف",
+    "subtitle": "حالة جودة الهواء المكتشفة بواسطة النموذج",
+    "current_state": "الحالة الحالية",
+    "healthy_air": "هواء صحي",
+    "medium_air": "جودة متوسطة",
+    "critical": "حرج",
+    "occurrence_frequency": "معدل التكرار — 24 ساعة",
+    "history": "سجل التصنيف",
+    "timestamp": "التوقيت",
+    "class": "الفئة"
+  },
+
+  "alerts": {
+    "title": "التنبيهات",
+    "subtitle": "مركز التنبيهات الحرجة في الزمن الحقيقي",
+    "active": "نشطة",
+    "acknowledged": "تمت المعالجة",
+    "resolved": "تم الحل",
+    "all": "الكل",
+    "date": "التاريخ",
+    "level": "المستوى",
+    "message": "الرسالة",
+    "co2": "CO₂",
+    "status": "الحالة",
+    "empty": "لا توجد تنبيهات لهذا الفلتر."
+  },
+
+  "profile": {
+    "title": "الملف الشخصي",
+    "subtitle": "معلومات الحساب وأمانه",
+    "personal_info": "المعلومات الشخصية",
+    "save_profile": "حفظ الملف الشخصي",
+    "change_password": "تغيير كلمة المرور",
+    "current_password": "الحالية",
+    "new_password": "الجديدة",
+    "confirmation": "التأكيد",
+    "update_password": "تحديث"
+  },
+
+  "sensors": {
+    "current_co2": "تركيز CO₂ الحالي",
+    "critical_threshold": "العتبة الحرجة",
+    "sensor_status": "حالة الحساس",
+    "seen_ago": "آخر ظهور",
+    "firmware": "البرنامج الثابت",
+    "avg_24h": "متوسط 24 ساعة",
+    "max_24h": "الحد الأقصى 24 ساعة",
+    "active_alerts": "التنبيهات النشطة"
+  },
+
+  "errors": {
+    "data_loading": "خطأ في تحميل البيانات",
+    "no_data": "لا توجد بيانات متاحة",
+    "no_data_desc": "لم يتم استقبال أي قياسات CO₂ لهذا الحساس خلال الفترة المحددة."
+  }
+}

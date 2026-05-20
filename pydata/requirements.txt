@@ -1,0 +1,21 @@
+# ============================================================
+#  CO₂ Monitoring Platform — Dépendances Python
+#  Installer avec : pip install -r requirements.txt
+# ============================================================
+
+# Connecteur MySQL officiel (Oracle)
+mysql-connector-python==8.3.0
+
+# Client InfluxDB v2 (compatible InfluxDB 2.x et Cloud)
+influxdb-client==1.43.0
+
+# Chargement des variables d'environnement depuis .env
+python-dotenv==1.0.1
+
+# Génération de données fictives réalistes (noms, adresses, emails…)
+Faker==24.3.0
+
+# Dépendances transitives épinglées pour la reproductibilité
+certifi>=2024.2.2
+urllib3>=2.0.0
+reactivex>=4.0.4       # Requis par influxdb-client pour le mode async

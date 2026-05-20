@@ -1,0 +1,525 @@
+/* Leaflet base styles (chargé en local pour éviter blocage CDN) */
+@import "leaflet/dist/leaflet.css";
+@import "./styles/animations.css";
+@import "./styles/industrial-ui.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================================
+   🌍 DESIGN SYSTEM — CO₂ ENVIRONMENT • CLOUDS • PREMIUM ELEGANCE
+   Professional • Sophisticated • Nature-Inspired
+   Cloud Morphism + Modern Minimalism
+   ================================================================ */
+
+@layer base {
+  :root {
+    /* ━━━━ DESIGN SYSTEM — “PURETÉ & AIR” (LIGHT) ━━━━ */
+    /* Background principal : #F4F9FF */
+    --background: 210 100% 97%; /* ≈ #F4F9FF */
+    /* Texte principal : #2C3E50 */
+    --foreground: 208 20% 24%; /* ≈ #2C3E50 */
+
+    /* Surfaces/cards : #D1E3F8 */
+    --card: 206 85% 90%; /* ≈ #D1E3F8 */
+    --card-foreground: 208 20% 24%;
+
+    --popover: 206 85% 90%;
+    --popover-foreground: 208 20% 24%;
+
+    /* Accent positif : #4CAF50 */
+    --primary: 140 52% 45%; /* ≈ #4CAF50 */
+    --primary-foreground: 210 40% 10%;
+    --primary-glow: 140 55% 55%;
+
+    /* Secondary / muted */
+    --secondary: 205 85% 88%;
+    --secondary-foreground: 208 20% 24%;
+
+    --muted: 210 30% 92%;
+    --muted-foreground: 208 15% 38%;
+
+    --accent: 140 45% 85%;
+    --accent-foreground: 140 45% 28%;
+
+    /* Status */
+    --status-good: 140 52% 45%;
+    --status-good-foreground: 210 40% 10%;
+    --status-warning: 38 92% 55%;
+    --status-warning-foreground: 208 20% 24%;
+    --status-critical: 0 84% 60%;
+    --status-critical-foreground: 210 40% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 10%;
+
+    /* Borders & inputs */
+    --border: 206 80% 82%;
+    --input: 210 90% 94%;
+    --ring: 140 52% 45%;
+
+    --radius: 20px;
+
+    /* Sidebar (light baseline) */
+    --sidebar-background: 210 100% 97%;
+    --sidebar-foreground: 208 20% 24%;
+    --sidebar-primary: 140 52% 45%;
+    --sidebar-primary-foreground: 210 100% 97%;
+    --sidebar-accent: 206 85% 90%;
+    --sidebar-accent-foreground: 208 20% 24%;
+    --sidebar-border: 206 80% 82%;
+    --sidebar-ring: 140 52% 45%;
+
+    /* Premium gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(140 52% 45%) 0%, hsl(195 85% 55%) 100%);
+    --gradient-glow: linear-gradient(135deg, hsl(140 52% 45% / 0.25), hsl(195 85% 55% / 0.08));
+    --gradient-surface: linear-gradient(180deg, hsl(210 100% 97% / 0.95), hsl(206 85% 90% / 0.6));
+    --gradient-cloud: linear-gradient(180deg, hsl(206 85% 90%), hsl(210 100% 97%));
+    --gradient-critical: linear-gradient(135deg, hsl(0 84% 60%), hsl(15 90% 60%));
+    --gradient-good: linear-gradient(135deg, hsl(140 52% 45%), hsl(144 60% 52%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 55%), hsl(35 90% 58%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(210 100% 97%), hsl(206 85% 90%));
+    --gradient-environment: linear-gradient(135deg, hsl(140 48% 35%), hsl(160 50% 40%));
+
+    /* Shadows (soft & diffused) */
+    --shadow-soft: 0 2px 6px hsl(210 35% 16% / 0.06);
+    --shadow-card: 0 1px 3px hsl(210 35% 16% / 0.08), 0 16px 40px hsl(199 89% 48% / 0.10);
+    --shadow-elevated: 0 6px 18px hsl(210 35% 16% / 0.12), 0 24px 60px hsl(199 89% 48% / 0.16);
+    --shadow-glow: 0 0 0 2px hsl(140 52% 45% / 0.18), 0 0 40px hsl(195 85% 55% / 0.18);
+    --shadow-inset: inset 0 1px 2px hsl(206 85% 90% / 0.7), inset 0 -2px 10px hsl(208 20% 24% / 0.05);
+
+    /* Transitions (smooth) */
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: cubic-bezier(0.2, 0.9, 0.2, 1);
+    --transition-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .dark {
+    /* ━━━ DARK MODE — INDUSTRIEL FUTURISTE / “NUAGE D’IA” ━━━ */
+    /* Fond métallisé fumé (bleu nuit) */
+    --background: 222 48% 7%;
+    --foreground: 210 22% 92%;
+
+    /* Surfaces (glass) */
+    --card: 222 40% 10%;
+    --card-foreground: 210 22% 92%;
+    --popover: 222 40% 10%;
+    --popover-foreground: 210 22% 92%;
+
+    /* Accents & interactivité */
+    --primary: 189 94% 55%;           /* Cyan électrique */
+    --primary-foreground: 222 48% 7%;
+    --secondary: 140 70% 55%;         /* Vert néon (actions secondaires/OK) */
+    --secondary-foreground: 222 48% 7%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 214 18% 70%;
+
+    --accent: 189 94% 55%;            /* hover cyan */
+    --accent-foreground: 222 48% 7%;
+
+    /* Statuts (conforme brief) */
+    --status-good: 142 71% 45%;       /* ≈ #4ADE80 */
+    --status-good-foreground: 222 48% 7%;
+    --status-warning: 45 96% 55%;     /* ≈ #FBBF24 */
+    --status-warning-foreground: 222 48% 7%;
+    --status-critical: 0 88% 70%;     /* ≈ #F87171 */
+    --status-critical-foreground: 222 48% 7%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 210 40% 10%;
+
+    --border: 220 20% 18%;
+    --input: 220 22% 14%;
+    --ring: 189 94% 55%;
+
+    --sidebar-background: 222 48% 7%;
+    --sidebar-foreground: 210 22% 92%;
+    --sidebar-primary: 189 94% 55%;
+    --sidebar-primary-foreground: 222 48% 7%;
+    --sidebar-accent: 220 28% 14%;
+    --sidebar-accent-foreground: 210 22% 92%;
+    --sidebar-border: 220 20% 16%;
+    --sidebar-ring: 189 94% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(189 94% 55%) 0%, hsl(274 90% 62%) 100%); /* cyan → magenta */
+    --gradient-glow: linear-gradient(135deg, hsl(189 94% 55% / 0.22), hsl(274 90% 62% / 0.10));
+    --gradient-surface: linear-gradient(180deg, hsl(222 40% 10% / 0.92), hsl(222 48% 7% / 0.98));
+    --gradient-cloud: linear-gradient(180deg, hsl(220 28% 14%), hsl(222 48% 7%));
+    --gradient-critical: linear-gradient(135deg, hsl(0 84% 63%), hsl(15 90% 60%));
+    --gradient-good: linear-gradient(135deg, hsl(140 70% 55%), hsl(144 65% 58%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 60%), hsl(35 90% 63%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(222 48% 7%), hsl(220 28% 12%));
+    --gradient-environment: linear-gradient(135deg, hsl(140 55% 45%), hsl(160 55% 50%));
+
+    --shadow-soft: 0 2px 10px hsl(222 60% 2% / 0.55);
+    --shadow-card: 0 2px 18px hsl(222 60% 2% / 0.65);
+    --shadow-elevated: 0 10px 40px hsl(222 60% 2% / 0.75);
+    --shadow-glow: 0 0 0 2px hsl(189 94% 55% / 0.18), 0 0 55px hsl(274 90% 62% / 0.14);
+    --shadow-inset: inset 0 1px 2px hsl(210 22% 92% / 0.06), inset 0 -2px 10px hsl(222 60% 2% / 0.55);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASE STYLES: Typography & Global Elements
+   ═══════════════════════════════════════════════════════════ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+
+    /* Premium background with subtle clouds morphism */
+    background-image:
+      radial-gradient(900px 520px at 100% -10%, hsl(195 85% 55% / 0.10), transparent 55%),
+      radial-gradient(700px 560px at -10% 110%, hsl(140 55% 45% / 0.06), transparent 55%),
+      radial-gradient(900px 420px at 50% 0%, hsl(210 100% 97% / 1), transparent 80%);
+
+    background-attachment: fixed;
+    background-position: 0 0, 100% 100%, 50% 0;
+
+    transition: background-color 400ms var(--transition-smooth), color 400ms var(--transition-smooth);
+  }
+
+  /* Override background texture in dark mode: metallic smoke + cyan/magenta “AI cloud” */
+  .dark body {
+    background-image:
+      radial-gradient(900px 520px at 110% -10%, hsl(189 94% 55% / 0.10), transparent 55%),
+      radial-gradient(700px 560px at -10% 120%, hsl(274 90% 62% / 0.08), transparent 55%),
+      radial-gradient(980px 520px at 50% -20%, hsl(222 48% 7% / 1), transparent 75%),
+      linear-gradient(135deg, hsl(222 48% 7% / 1), hsl(220 40% 8% / 1));
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
+    letter-spacing: -0.3px;
+  }
+
+  h1 {
+    @apply text-3xl font-bold;
+  }
+
+  h2 {
+    @apply text-2xl font-bold;
+  }
+
+  h3 {
+    @apply text-lg font-semibold;
+  }
+
+  /* Selection highlight - sky blue */
+  ::selection {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full;
+    transition: background-color 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS: Reusable UI Classes
+   ═══════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ━━━ GLASS MORPHISM: Frosted Glass Effect ━━━ */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s var(--transition-smooth);
+  }
+
+  .glass:hover {
+    @apply bg-white/80 border-white/50;
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/50 backdrop-blur-xl border border-white/10;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* ━━━ PREMIUM CARDS ━━━ */
+  .surface-card {
+    @apply rounded-2xl bg-card border border-border/60 p-6;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s var(--transition-smooth);
+  }
+
+  .surface-card:hover {
+    @apply border-border/100;
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+  }
+
+  .surface-card-elevated {
+    @apply rounded-2xl bg-card border border-border/80 p-6;
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* ━━━ CLOUD EFFECT: Soft floating cards ━━━ */
+  .cloud-effect {
+    background: var(--gradient-cloud);
+    border-radius: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cloud-effect::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, hsl(195 85% 55% / 0.05) 100%);
+    pointer-events: none;
+  }
+
+  /* ━━━ STATUS BADGES ━━━ */
+  .status-badge {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold;
+    transition: all 0.2s var(--transition-smooth);
+  }
+
+  .status-badge-good {
+    @apply bg-status-good/15 text-status-good border border-status-good/30;
+  }
+
+  .status-badge-warning {
+    @apply bg-status-warning/15 text-status-warning border border-status-warning/30;
+  }
+
+  .status-badge-critical {
+    @apply bg-status-critical/15 text-status-critical border border-status-critical/30;
+    animation: pulse-critical 2s ease-in-out infinite;
+  }
+
+  .status-dot {
+    @apply inline-block h-3 w-3 rounded-full;
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  .status-dot-good {
+    @apply bg-status-good;
+    box-shadow: 0 0 8px hsl(140 65% 48% / 0.4);
+  }
+
+  .status-dot-warning {
+    @apply bg-status-warning;
+    box-shadow: 0 0 8px hsl(38 92% 55% / 0.4);
+  }
+
+  .status-dot-critical {
+    @apply bg-status-critical;
+    box-shadow: 0 0 12px hsl(0 84% 60% / 0.6);
+  }
+
+  /* ━━━ KPI PILLS ━━━ */
+  .kpi-pill {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold;
+    background: hsl(var(--accent) / 0.1);
+    color: hsl(var(--accent-foreground));
+    border: 1px solid hsl(var(--accent) / 0.2);
+  }
+
+  /* ━━━ GRID BACKGROUND ━━━ */
+  .grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* ━━━ PREMIUM INPUTS ━━━ */
+  .input-premium {
+    @apply rounded-xl bg-input border border-border/60 px-4 py-2.5 text-base;
+    box-shadow: var(--shadow-inset);
+    transition: all 0.2s var(--transition-smooth);
+  }
+
+  .input-premium:focus {
+    @apply border-primary ring-2 ring-primary/20 outline-none;
+  }
+
+  .input-premium::placeholder {
+    @apply text-muted-foreground/60;
+  }
+
+  /* ━━━ BUTTON VARIANTS ━━━ */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground font-semibold px-6 py-2.5;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s var(--transition-smooth);
+  }
+
+  .btn-primary:hover {
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl bg-secondary text-secondary-foreground font-semibold px-6 py-2.5;
+    border: 1px solid hsl(var(--secondary) / 0.3);
+    transition: all 0.3s var(--transition-smooth);
+  }
+
+  .btn-secondary:hover {
+    @apply bg-secondary/80 border-secondary/50;
+  }
+
+  /* ━━━ TEXT GRADIENTS ━━━ */
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-environment {
+    background: var(--gradient-environment);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ━━━ SHADOW UTILITIES ━━━ */
+  .ring-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* ━━━ BACKDROP & BLUR ━━━ */
+  .backdrop-glow {
+    @apply absolute inset-0 rounded-2xl;
+    background: radial-gradient(circle at center, hsl(195 85% 55% / 0.1), transparent 70%);
+    pointer-events: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES: Functional Classes
+   ═══════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Premium transitions */
+  .transition-smooth {
+    transition-timing-function: var(--transition-smooth);
+  }
+
+  .transition-spring {
+    transition-timing-function: var(--transition-spring);
+  }
+
+  .transition-gentle {
+    transition-timing-function: var(--transition-gentle);
+  }
+
+  /* Animation utilities */
+  .animate-drift-slow {
+    animation: drift-slow 6s ease-in-out infinite;
+  }
+
+  .animate-float-cloud {
+    animation: float-cloud 4s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  /* Positioning utilities */
+  .absolute-center {
+    @apply absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+  }
+
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  /* Gradient utilities */
+  .bg-gradient-cloud {
+    background: var(--gradient-cloud);
+  }
+
+  .bg-gradient-environment {
+    background: var(--gradient-environment);
+  }
+
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Responsive typography */
+  .heading-hero {
+    @apply text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl;
+    letter-spacing: -0.5px;
+  }
+
+  .heading-section {
+    @apply text-2xl font-bold tracking-tight;
+    letter-spacing: -0.3px;
+  }
+
+  .text-muted {
+    @apply text-muted-foreground;
+  }
+
+  /* Focus ring utility */
+  .focus-ring {
+    @apply outline-none ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAP & LEAFLET: Custom Styling
+   ═══════════════════════════════════════════════════════════ */
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: var(--radius);
+  font-family: inherit;
+  background: hsl(var(--background));
+}
