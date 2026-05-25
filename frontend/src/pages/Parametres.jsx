@@ -1,30 +1,57 @@
-import AppLayout from "@/components/layout/AppLayout";
-import { GlassCard } from "@/components/ui/glass-card";
-import api, { resolveApiErrorMessage, unwrapApiData } from "@/services/api";
-import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Bell,
   Cpu,
-  MapPin,
   Save,
   ShieldAlert,
   Users,
   Wifi,
   Zap,
   Compass,
+  ExternalLink,
 } from "lucide-react";
 
-function isRtlLang(language) {
-  return language === "ar";
+import AppLayout from "@/components/layout/AppLayout";
+import { GlassCard } from "@/components/ui/glass-card";
+import api, { resolveApiErrorMessage, unwrapApiData } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
+
+const DEFAULT_SETTINGS = {
+  limitGood: 600,
+  limitWarning: 1000,
+  limitCritical: 1400,
+  aiModel: "standard",
+  horizonMinutes: 30,
+  samplingIntervalSeconds: 60,
+  wifiSsid: "",
+  mqttBrokerUrl: "",
+  mqttTopic: "",
+  notifyEmail: true,
+  notifyPush: true,
+  notifyWebhookSlack: false,
+  slackWebhookUrl: "",
+  notifyWebhookDiscord: false,
+  discordWebhookUrl: "",
+};
+
+const PREDICTION_MODELS = [
+  { value: "standard", labelKey: "settings.thresholds.models.standard" },
+  { value: "advanced", labelKey: "settings.thresholds.models.advanced" },
+];
+
+function roleLabel(t, role) {
+  const r = String(role || "").toUpperCase();
+  if (r === "ADMIN") return t("settings.users.roles.ADMIN");
+  if (r === "TECHNICIAN") return t("settings.users.roles.TECHNICIAN");
+  return t("settings.users.roles.CLIENT");
 }
 
-function badgeClassForPpm(ppm, { limitGood, limitWarning, limitCritical }) {
-  const g = Number(limitGood);
-  const w = Number(limitWarning);
-  const c = Number(limitCritical);
+function ppmBadgeClass(ppm, limits) {
+  const g = Number(limits.limitGood);
+  const w = Number(limits.limitWarning);
   if (!Number.isFinite(ppm)) return "status-badge";
   if (ppm < g) return "status-badge status-badge-good";
   if (ppm < w) return "status-badge status-badge-warning";
@@ -59,9 +86,30 @@ function SwitchRow({ label, checked, onChange, disabled }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm">{label}</div>
+        <span className="text-sm">{label}</span>
         <Toggle checked={checked} onChange={onChange} disabled={disabled} />
       </div>
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, onSave, saving, saveDisabled, saveLabel }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <h2 className="ui-section-title">{title}</h2>
+      </div>
+      {onSave && (
+        <button
+          type="button"
+          className="ui-ghost ui-ghost--primary"
+          disabled={saveDisabled || saving}
+          onClick={onSave}
+        >
+          <Save className="h-4 w-4" /> {saveLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -70,126 +118,105 @@ export default function Parametres() {
   const { user, hasRole } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const role = String(user?.role || "").toUpperCase();
   const isAdmin = hasRole("ADMIN");
   const isTechnician = hasRole("TECHNICIAN");
-  const isClient = role === "CLIENT";
+  const isClient = hasRole("CLIENT") && !isAdmin && !isTechnician;
 
-  const [tab, setTab] = useState(() => (isAdmin ? "positioning" : isTechnician ? "iot" : "notify"));
+  const tabs = useMemo(() => {
+    const list = [{ id: "general", icon: Bell, label: t("settings.notify.tabs.title"), desc: t("settings.notify.tabs.desc") }];
+    if (isAdmin) {
+      list.push({ id: "thresholds", icon: ShieldAlert, label: t("settings.thresholds.tabs.title"), desc: t("settings.thresholds.tabs.desc") });
+    }
+    if (isAdmin || isTechnician) {
+      list.push({ id: "sensors", icon: Cpu, label: t("settings.iot.tabs.title"), desc: t("settings.iot.tabs.desc") });
+      list.push({ id: "placement", icon: Compass, label: t("settings.positioning.tabs.title"), desc: t("settings.positioning.tabs.desc") });
+    }
+    if (isAdmin) {
+      list.push({ id: "team", icon: Users, label: t("settings.users.tabs.title"), desc: t("settings.users.tabs.desc") });
+    }
+    return list;
+  }, [isAdmin, isTechnician, t]);
+
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? "general");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  // Settings globaux (réutilise /settings)
-  const [settings, setSettings] = useState({
-    // Seuils & IA
-    limitGood: 600,
-    limitWarning: 1000,
-    limitCritical: 1400,
-    aiModel: "Random Forest",
-    horizonMinutes: 30,
-
-    // IoT & réseau
-    samplingIntervalSeconds: 60,
-    wifiSsid: "",
-    mqttBrokerUrl: "",
-    mqttTopic: "",
-
-    // Notifications
-    notifyEmail: true,
-    notifyPush: true,
-    notifyWebhookSlack: false,
-    slackWebhookUrl: "",
-    notifyWebhookDiscord: false,
-    discordWebhookUrl: "",
-  });
-
-  const [sensorTest, setSensorTest] = useState({ sensorId: "", last: null, mqtt: null });
-
+  const [sensorTest, setSensorTest] = useState({ sensorId: "", last: null, linkOk: null });
+  const [positions, setPositions] = useState([]);
   const [users, setUsers] = useState([]);
   const [invite, setInvite] = useState({ name: "", email: "", role: "CLIENT" });
 
-  const [positioningZones, setPositioningZones] = useState([]);
-  const [positioningFixLoading, setPositioningFixLoading] = useState(false);
-  const [positioningReference, setPositioningReference] = useState({ lat: null, lng: null });
-  const [geofenceRadiusM, setGeofenceRadiusM] = useState(10);
-
-  const allowedTabs = useMemo(() => {
-    const out = [];
-    // Onglet 1 POSITIONING: ADMIN & TECHNICIAN
-    if (isAdmin || isTechnician) out.push("positioning");
-    // Onglet 2 THRESHOLDS: ADMIN only
-    if (isAdmin) out.push("thresholds");
-    // Onglet 3 IoT: ADMIN & TECHNICIAN
-    if (isAdmin || isTechnician) out.push("iot");
-    // Onglet 3bis / Notifications
-    out.push("notify");
-    // Onglet 4 Users: ADMIN only
-    if (isAdmin) out.push("users");
-    return out;
-  }, [isAdmin, isTechnician]);
-
   useEffect(() => {
-    if (!allowedTabs.includes(tab)) setTab(allowedTabs[0] || "notify");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedTabs.join("|")]);
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id ?? "general");
+    }
+  }, [tabs, activeTab]);
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get("/settings");
-        const payload = unwrapApiData(res.data);
-        if (!mounted) return;
-        setSettings((prev) => ({ ...prev, ...(payload || {}) }));
-        setError("");
-      } catch (e) {
-        if (!mounted) return;
-        setError(resolveApiErrorMessage(e, t("settings.errors.load_failed") || "Unable to load settings"));
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.get("/settings");
+      const data = unwrapApiData(res.data);
+      setSettings((prev) => ({ ...prev, ...(data || {}) }));
+    } catch (e) {
+      // Non bloquant: les autres onglets doivent rester utilisables.
+      setError(resolveApiErrorMessage(e, t("settings.errors.load_failed")));
+      setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...prev }));
+    } finally {
+      setLoading(false);
+    }
   }, [t]);
 
   useEffect(() => {
-    if (tab === "positioning") {
-      (async () => {
-        try {
-          const res = await api.get("/positioning/positions");
-          const payload = unwrapApiData(res.data);
-          setPositioningZones(Array.isArray(payload) ? payload : []);
-        } catch (_e) {}
-      })();
-    }
+    loadSettings();
+  }, [loadSettings]);
 
-    if (tab === "users") {
-      if (!isAdmin) return;
-      (async () => {
-        try {
-          const res = await api.get("/users");
-          const payload = unwrapApiData(res.data);
-          setUsers(Array.isArray(payload) ? payload : []);
-        } catch (_e) {}
-      })();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  useEffect(() => {
+    if (activeTab !== "placement" || !(isAdmin || isTechnician)) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get("/positioning/positions");
+        const rows = unwrapApiData(res.data);
+        if (!cancelled) setPositions(Array.isArray(rows) ? rows : []);
+      } catch {
+        if (!cancelled) setPositions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, isAdmin, isTechnician]);
 
-  const save = async (patch) => {
+  useEffect(() => {
+    if (activeTab !== "team" || !isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get("/users");
+        const rows = unwrapApiData(res.data);
+        if (!cancelled) setUsers(Array.isArray(rows) ? rows : []);
+      } catch {
+        if (!cancelled) setUsers([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, isAdmin]);
+
+  const saveSettings = async (patch) => {
     try {
       setSaving(true);
       const res = await api.patch("/settings", patch);
-      const payload = unwrapApiData(res.data);
-      setSettings((prev) => ({ ...prev, ...(payload || {}) }));
-      toast.success(t("settings.common.saved") || "Saved");
+      const data = unwrapApiData(res.data);
+      setSettings((prev) => ({ ...prev, ...(data || {}) }));
+      toast.success(t("settings.common.saved"));
     } catch (e) {
-      toast.error(resolveApiErrorMessage(e, t("settings.errors.save_failed") || "Save failed"));
+      toast.error(resolveApiErrorMessage(e, t("settings.errors.save_failed")));
     } finally {
       setSaving(false);
     }
@@ -198,15 +225,15 @@ export default function Parametres() {
   const runSensorTest = async () => {
     try {
       const res = await api.get(`/settings/sensor-test?sensorId=${encodeURIComponent(sensorTest.sensorId || "")}`);
-      const payload = unwrapApiData(res.data);
+      const data = unwrapApiData(res.data);
       setSensorTest((p) => ({
         ...p,
-        last: payload?.lastReading || null,
-        mqtt: payload?.mqtt || null,
+        last: data?.lastReading ?? null,
+        linkOk: Boolean(data?.mqtt?.connected),
       }));
-      toast.success(t("settings.iot.ping_done") || "Ping done");
+      toast.success(t("settings.iot.ping_done"));
     } catch (e) {
-      toast.error(resolveApiErrorMessage(e, t("settings.iot.ping_failed") || "Ping failed"));
+      toast.error(resolveApiErrorMessage(e, t("settings.iot.ping_failed")));
     }
   };
 
@@ -215,264 +242,425 @@ export default function Parametres() {
     try {
       const res = await api.post("/users/invite", invite);
       const created = unwrapApiData(res.data);
-      toast.success(t("settings.users.invite_created") || "Invitation created");
       setInvite({ name: "", email: "", role: "CLIENT" });
       setUsers((prev) => [created, ...prev]);
+      toast.success(t("settings.users.invite_created"));
     } catch (e) {
-      toast.error(resolveApiErrorMessage(e, t("settings.users.invite_failed") || "Invite failed"));
+      toast.error(resolveApiErrorMessage(e, t("settings.users.invite_failed")));
     }
   };
 
-  const updateUserRole = async (companyUserId, nextRole) => {
+  const updateUserRole = async (id, role) => {
     if (!isAdmin) return;
     try {
-      const res = await api.patch(`/users/${encodeURIComponent(companyUserId)}/role`, { role: nextRole });
+      const res = await api.patch(`/users/${encodeURIComponent(id)}/role`, { role });
       const updated = unwrapApiData(res.data);
-      setUsers((prev) => prev.map((u) => (String(u.companyUserId) === String(companyUserId) ? updated : u)));
-    } catch (_e) {}
+      setUsers((prev) => prev.map((u) => (String(u.companyUserId || u.id) === String(id) ? updated : u)));
+    } catch {
+      toast.error(t("settings.errors.save_failed"));
+    }
   };
 
-  const tabs = [
-    {
-      key: "positioning",
-      title: t("settings.positioning.tabs.title"),
-      desc: t("settings.positioning.tabs.desc"),
-      icon: Compass,
-      visible: isAdmin || isTechnician,
-    },
-    {
-      key: "thresholds",
-      title: t("settings.thresholds.tabs.title"),
-      desc: t("settings.thresholds.tabs.desc"),
-      icon: ShieldAlert,
-      visible: isAdmin,
-    },
-    {
-      key: "iot",
-      title: t("settings.iot.tabs.title"),
-      desc: t("settings.iot.tabs.desc"),
-      icon: Cpu,
-      visible: isAdmin || isTechnician,
-    },
-    {
-      key: "notify",
-      title: t("settings.notify.tabs.title"),
-      desc: t("settings.notify.tabs.desc"),
-      icon: Bell,
-      visible: true,
-    },
-    {
-      key: "users",
-      title: t("settings.users.tabs.title"),
-      desc: t("settings.users.tabs.desc"),
-      icon: Users,
-      visible: isAdmin,
-    },
-  ].filter((x) => x.visible);
-
-  const thresholdBadges = useMemo(() => {
-    return {
-      good: { label: t("settings.thresholds.badges.good"), ppm: settings.limitGood },
-      warning: { label: t("settings.thresholds.badges.warning"), ppm: settings.limitWarning },
-      critical: { label: t("settings.thresholds.badges.critical"), ppm: settings.limitCritical },
-    };
-  }, [settings.limitGood, settings.limitWarning, settings.limitCritical, t]);
-
-  const tabsContainerDir = isRtlLang(i18n.language) ? "rtl" : "ltr";
+  const dir = i18n.language === "ar" ? "rtl" : "ltr";
+  const saveLabel = t("settings.common.save");
 
   return (
-    <div dir={tabsContainerDir}>
-      <AppLayout title={t("settings.title") || "Paramètres"} subtitle={t("settings.subtitle") || ""}>
+    <div dir={dir}>
+      <AppLayout title={t("settings.title")} subtitle={t("settings.subtitle")}>
         <div className="ui-vtabs">
-          {/* Sidebar interne */}
           <GlassCard className="p-4 h-fit lg:sticky lg:top-[92px]">
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("settings.common.tabs") || "Tabs"}</div>
-              <span className="ui-badge text-muted-foreground">{role || "—"}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("settings.common.tabs")}
+              </span>
+              <span className="ui-badge text-muted-foreground">{roleLabel(t, user?.role)}</span>
             </div>
-            <div className="mt-3 ui-vtabs__nav">
-              {tabs.map(({ key, title, desc, icon: Icon }) => (
+            <nav className="mt-3 ui-vtabs__nav" aria-label={t("settings.common.tabs")}>
+              {tabs.map(({ id, label, desc, icon: Icon }) => (
                 <button
-                  key={key}
-                  className="ui-vtab"
-                  aria-selected={tab === key}
-                  onClick={() => setTab(key)}
+                  key={id}
                   type="button"
+                  className="ui-vtab"
+                  aria-selected={activeTab === id}
+                  onClick={() => setActiveTab(id)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="ui-vtab__title">{title}</div>
+                    <div className="min-w-0 text-start">
+                      <div className="ui-vtab__title">{label}</div>
                       <div className="ui-vtab__desc">{desc}</div>
                     </div>
-                    <Icon className="h-4 w-4 text-primary shrink-0" />
+                    <Icon className="h-4 w-4 shrink-0 text-primary" />
                   </div>
                 </button>
               ))}
-            </div>
+            </nav>
           </GlassCard>
 
-          {/* Contenu */}
-          <div className="grid gap-3">
+          <div className="grid gap-3 min-w-0">
             <GlassCard className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("settings.common.profile")}</div>
-                  <div className="mt-1 text-sm font-extrabold">{user?.name || "—"}</div>
-                  <div className="text-xs text-muted-foreground">{user?.email || "—"}</div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("settings.common.profile")}
+                  </p>
+                  <p className="mt-1 text-sm font-extrabold">{user?.name || "—"}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email || "—"}</p>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {t("settings.common.access")}: <span className="font-semibold text-foreground">{role}</span>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.common.access")}:{" "}
+                  <span className="font-semibold text-foreground">{roleLabel(t, user?.role)}</span>
+                </p>
               </div>
             </GlassCard>
 
-            {loading && <GlassCard className="p-4 text-sm text-muted-foreground">{t("settings.common.loading")}</GlassCard>}
-            {error && <GlassCard className="p-4 text-sm text-status-critical">{error}</GlassCard>}
+            {loading && (
+              <GlassCard className="p-4 text-sm text-muted-foreground">{t("settings.common.loading")}</GlassCard>
+            )}
 
-            {!loading && !error && (
-              <>
-                {tab === "positioning" && (
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <div className="ui-section-title">{t("settings.positioning.title")}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {t("settings.positioning.desc")}
-                      </div>
-                    </div>
+            {error && !loading && (
+              <GlassCard className="p-4 space-y-3">
+                <p className="text-sm text-status-critical">{error}</p>
+                <button type="button" className="ui-ghost ui-ghost--primary" onClick={loadSettings}>
+                  {t("settings.common.refresh")}
+                </button>
+              </GlassCard>
+            )}
 
-                    <div className="mt-4 grid gap-3">
-                      <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            {t("settings.positioning.zones_testees")}
+            {!loading && activeTab === "general" && (
+              <GlassCard className="p-4 space-y-4">
+                <SectionHeader
+                  icon={Bell}
+                  title={t("settings.notify.title")}
+                  saveLabel={saveLabel}
+                  saving={saving}
+                  saveDisabled={isClient}
+                  onSave={() =>
+                    saveSettings({
+                      notifyEmail: settings.notifyEmail,
+                      notifyPush: settings.notifyPush,
+                      notifyWebhookSlack: settings.notifyWebhookSlack,
+                      slackWebhookUrl: settings.slackWebhookUrl,
+                      notifyWebhookDiscord: settings.notifyWebhookDiscord,
+                      discordWebhookUrl: settings.discordWebhookUrl,
+                    })
+                  }
+                />
+                <div className="grid gap-2">
+                  <SwitchRow
+                    label={t("settings.notify.email")}
+                    checked={settings.notifyEmail}
+                    onChange={(v) => setSettings((s) => ({ ...s, notifyEmail: v }))}
+                    disabled={isClient}
+                  />
+                  <SwitchRow
+                    label={t("settings.notify.push")}
+                    checked={settings.notifyPush}
+                    onChange={(v) => setSettings((s) => ({ ...s, notifyPush: v }))}
+                    disabled={isClient}
+                  />
+                  <SwitchRow
+                    label={t("settings.notify.slack")}
+                    checked={settings.notifyWebhookSlack}
+                    onChange={(v) => setSettings((s) => ({ ...s, notifyWebhookSlack: v }))}
+                    disabled={isClient}
+                  />
+                  {settings.notifyWebhookSlack && (
+                    <Field label={t("settings.notify.slack_url")}>
+                      <input
+                        className="ui-pill w-full"
+                        value={settings.slackWebhookUrl}
+                        onChange={(e) => setSettings((s) => ({ ...s, slackWebhookUrl: e.target.value }))}
+                        disabled={isClient}
+                      />
+                    </Field>
+                  )}
+                  <SwitchRow
+                    label={t("settings.notify.discord")}
+                    checked={settings.notifyWebhookDiscord}
+                    onChange={(v) => setSettings((s) => ({ ...s, notifyWebhookDiscord: v }))}
+                    disabled={isClient}
+                  />
+                  {settings.notifyWebhookDiscord && (
+                    <Field label={t("settings.notify.discord_url")}>
+                      <input
+                        className="ui-pill w-full"
+                        value={settings.discordWebhookUrl}
+                        onChange={(e) => setSettings((s) => ({ ...s, discordWebhookUrl: e.target.value }))}
+                        disabled={isClient}
+                      />
+                    </Field>
+                  )}
+                </div>
+              </GlassCard>
+            )}
+
+            {!loading && activeTab === "thresholds" && isAdmin && (
+              <GlassCard className="p-4 space-y-4">
+                <SectionHeader
+                  icon={ShieldAlert}
+                  title={t("settings.thresholds.title")}
+                  saveLabel={saveLabel}
+                  saving={saving}
+                  onSave={() =>
+                    saveSettings({
+                      limitGood: settings.limitGood,
+                      limitWarning: settings.limitWarning,
+                      limitCritical: settings.limitCritical,
+                      aiModel: settings.aiModel,
+                      horizonMinutes: settings.horizonMinutes,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">{t("settings.thresholds.desc")}</p>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <Field label={t("settings.thresholds.limit_good")}>
+                    <input
+                      className="ui-pill ui-pill--mono w-full"
+                      type="number"
+                      min={350}
+                      max={1200}
+                      value={settings.limitGood}
+                      onChange={(e) => setSettings((s) => ({ ...s, limitGood: Number(e.target.value) }))}
+                    />
+                    <div className={ppmBadgeClass(settings.limitGood, settings)}>{t("settings.thresholds.badges.good")}</div>
+                  </Field>
+                  <Field label={t("settings.thresholds.limit_warning")}>
+                    <input
+                      className="ui-pill ui-pill--mono w-full"
+                      type="number"
+                      min={600}
+                      max={2000}
+                      value={settings.limitWarning}
+                      onChange={(e) => setSettings((s) => ({ ...s, limitWarning: Number(e.target.value) }))}
+                    />
+                    <div className={ppmBadgeClass(settings.limitWarning, settings)}>{t("settings.thresholds.badges.warning")}</div>
+                  </Field>
+                  <Field label={t("settings.thresholds.limit_critical")}>
+                    <input
+                      className="ui-pill ui-pill--mono w-full"
+                      type="number"
+                      min={800}
+                      max={5000}
+                      value={settings.limitCritical}
+                      onChange={(e) => setSettings((s) => ({ ...s, limitCritical: Number(e.target.value) }))}
+                    />
+                    <div className={ppmBadgeClass(settings.limitCritical, settings)}>{t("settings.thresholds.badges.critical")}</div>
+                  </Field>
+                  <Field label={t("settings.thresholds.model")}>
+                    <select
+                      className="ui-pill w-full"
+                      value={settings.aiModel}
+                      onChange={(e) => setSettings((s) => ({ ...s, aiModel: e.target.value }))}
+                    >
+                      {PREDICTION_MODELS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {t(m.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t("settings.thresholds.horizon")}>
+                    <input
+                      className="ui-pill ui-pill--mono w-full"
+                      type="number"
+                      min={5}
+                      max={120}
+                      value={settings.horizonMinutes}
+                      onChange={(e) => setSettings((s) => ({ ...s, horizonMinutes: Number(e.target.value) }))}
+                    />
+                  </Field>
+                </div>
+              </GlassCard>
+            )}
+
+            {!loading && activeTab === "sensors" && (isAdmin || isTechnician) && (
+              <GlassCard className="p-4 space-y-4">
+                <SectionHeader
+                  icon={Cpu}
+                  title={t("settings.iot.title")}
+                  saveLabel={saveLabel}
+                  saving={saving}
+                  onSave={() =>
+                    saveSettings({
+                      samplingIntervalSeconds: settings.samplingIntervalSeconds,
+                      wifiSsid: settings.wifiSsid,
+                      mqttBrokerUrl: settings.mqttBrokerUrl,
+                      mqttTopic: settings.mqttTopic,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">{t("settings.iot.desc")}</p>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <Field label={`${t("settings.iot.sampling")} (${t("settings.iot.sampling_s")})`}>
+                    <input
+                      className="ui-pill ui-pill--mono w-full"
+                      type="number"
+                      min={10}
+                      max={300}
+                      value={settings.samplingIntervalSeconds}
+                      onChange={(e) => setSettings((s) => ({ ...s, samplingIntervalSeconds: Number(e.target.value) }))}
+                    />
+                  </Field>
+                  <Field label={t("settings.iot.wifi_ssid")}>
+                    <input
+                      className="ui-pill w-full"
+                      value={settings.wifiSsid}
+                      onChange={(e) => setSettings((s) => ({ ...s, wifiSsid: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label={t("settings.iot.mqtt_host")}>
+                    <input
+                      className="ui-pill w-full"
+                      value={settings.mqttBrokerUrl}
+                      onChange={(e) => setSettings((s) => ({ ...s, mqttBrokerUrl: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label={t("settings.iot.mqtt_topic")}>
+                    <input
+                      className="ui-pill w-full"
+                      value={settings.mqttTopic}
+                      onChange={(e) => setSettings((s) => ({ ...s, mqttTopic: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-background/30 p-3 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("settings.iot.diagnostics")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      className="ui-pill flex-1 min-w-[140px]"
+                      placeholder={t("settings.iot.sensor_id_placeholder")}
+                      value={sensorTest.sensorId}
+                      onChange={(e) => setSensorTest((p) => ({ ...p, sensorId: e.target.value }))}
+                    />
+                    <button type="button" className="ui-ghost ui-ghost--primary" onClick={runSensorTest}>
+                      <Wifi className="h-4 w-4" /> {t("settings.iot.ping")}
+                    </button>
+                  </div>
+                  {sensorTest.last && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("settings.iot.results.last_measure")}:{" "}
+                      <span className="font-mono font-semibold text-foreground">
+                        {sensorTest.last.value ?? "—"} ppm
+                      </span>
+                    </p>
+                  )}
+                  {sensorTest.linkOk !== null && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("settings.iot.results.mqtt_status")}:{" "}
+                      <span className="font-semibold text-foreground">
+                        {sensorTest.linkOk ? t("link_ok") : t("link_lost")}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </GlassCard>
+            )}
+
+            {!loading && activeTab === "placement" && (isAdmin || isTechnician) && (
+              <GlassCard className="p-4 space-y-4">
+                <SectionHeader icon={Compass} title={t("settings.positioning.title")} />
+                <p className="text-xs text-muted-foreground">{t("settings.positioning.desc")}</p>
+                <Link
+                  to="/ia-placement"
+                  className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/15 transition"
+                >
+                  {t("sidebar_placement")} <ExternalLink className="h-4 w-4" />
+                </Link>
+                <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("settings.positioning.zones_testees")}
+                  </p>
+                  <div className="mt-2 grid gap-2">
+                    {positions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">—</p>
+                    ) : (
+                      positions.map((z) => (
+                        <div
+                          key={String(z.id)}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">{z.name || "—"}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{z.zone}</p>
                           </div>
-                          <span className="text-[11px] text-muted-foreground">{t("settings.positioning.recommended")}</span>
-                        </div>
-
-                        <div className="mt-3 grid gap-2">
-                          {positioningZones.length === 0 ? (
-                            <div className="text-xs text-muted-foreground">—</div>
-                          ) : (
-                            positioningZones.map((z) => (
-                              <PositionZoneRow key={String(z.id)} zone={z} />
-                            ))
+                          {(z.recommended || z.isFinal || z.is_final) && (
+                            <span className="ui-badge text-primary shrink-0">{t("settings.positioning.recommended")}</span>
                           )}
                         </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-                        <div className="grid gap-3 lg:grid-cols-2">
-                          <Field label={t("settings.positioning.gps_reference") + " · " + t("settings.positioning.latitude") }>
-                            <input
-                              className="ui-pill ui-pill--mono"
-                              type="number"
-                              readOnly
-                              value={positioningReference.lat ?? ""}
-                              placeholder={"—"}
-                            />
-                          </Field>
-                          <Field label={t("settings.positioning.gps_reference") + " · " + t("settings.positioning.longitude") }>
-                            <input
-                              className="ui-pill ui-pill--mono"
-                              type="number"
-                              readOnly
-                              value={positioningReference.lng ?? ""}
-                              placeholder={"—"}
-                            />
-                          </Field>
-
-                          <div className="lg:col-span-2">
-                            <Field label={`${t("settings.positioning.geofencing")} · ${t("settings.positioning.radius_m")}: ${geofenceRadiusM}m`}>
-                              <input
-                                type="range"
-                                min={5}
-                                max={30}
-                                step={1}
-                                value={geofenceRadiusM}
-                                onChange={(e) => setGeofenceRadiusM(Number(e.target.value))}
-                                disabled
-                              />
-                              <div className="mt-1 text-xs text-muted-foreground">{t("settings.positioning.radius_hint")}</div>
-                            </Field>
-                            <div className="mt-3">
-                              <button
-                                type="button"
-                                className="ui-ghost ui-ghost--primary w-full justify-center disabled:opacity-60"
-                                disabled
-                                title={t("settings.positioning.fix_position_disabled")}
-                              >
-                                <Save className="h-4 w-4" /> {t("settings.positioning.fix_position")}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 text-xs text-muted-foreground">
-                          {t("settings.positioning.not_implemented")}
-                        </div>
-                      </div>
-                    </div>
-                  </GlassCard>
-                )}
-
-                {tab === "thresholds" && (
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <ShieldAlert className="h-4 w-4 text-primary" />
-                        <div className="ui-section-title">{t("settings.thresholds.title")}</div>
-                      </div>
-                      <button
-                        className="ui-ghost ui-ghost--primary"
-                        disabled={!isAdmin || saving}
-                        onClick={() =>
-                          save({
-                            limitGood: settings.limitGood,
-                            limitWarning: settings.limitWarning,
-                            limitCritical: settings.limitCritical,
-                            aiModel: settings.aiModel,
-                            horizonMinutes: settings.horizonMinutes,
-                          })
-                        }
-                        type="button"
-                      >
-                        <Save className="h-4 w-4" /> {t("settings.common.save")}
-                      </button>
-                    </div>
-
-                    {!isAdmin && (
-                      <div className="mt-3 rounded-2xl border border-border/60 bg-background/30 p-3 text-xs text-muted-foreground">
-                        {t("settings.common.admin_only")}
-                      </div>
+                      ))
                     )}
+                  </div>
+                </div>
+              </GlassCard>
+            )}
 
-                    {isAdmin && (
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                        <Field label={t("settings.thresholds.limit_good")}>
-                          <input
-                            className="ui-pill ui-pill--mono"
-                            type="number"
-                            min={350}
-                            max={1200}
-                            value={settings.limitGood}
-                            onChange={(e) => setSettings((p) => ({ ...p, limitGood: Number(e.target.value) }))}
-                          />
-                          <div className={badgeClassForPpm(settings.limitGood, settings)}>{thresholdBadges.good.label}</div>
-                        </Field>
-
-                        <Field label={t("settings.thresholds.limit_warning")}>
-                          <input
-                            className="ui-pill ui-pill--mono"
-                            type="number"
-                            min={600}
-                            max={2000}
-                            value={settings.limitWarning}
-                            onChange={(e) => setSettings((p) => ({ ...p, limitWarning: Number(e.target.value) }))}
-                          />
-                          <div className={badgeClassForPpm(settings.limitWarning, settings)}>{thresholdBadges.warning.label}</div>
-                        </Field>
-
-                       
+            {!loading && activeTab === "team" && isAdmin && (
+              <GlassCard className="p-4 space-y-4">
+                <SectionHeader icon={Users} title={t("settings.users.title")} />
+                <p className="text-xs text-muted-foreground">{t("settings.users.desc")}</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <input
+                    className="ui-pill"
+                    placeholder={t("settings.users.invite.name")}
+                    value={invite.name}
+                    onChange={(e) => setInvite((p) => ({ ...p, name: e.target.value }))}
+                  />
+                  <input
+                    className="ui-pill"
+                    type="email"
+                    placeholder={t("settings.users.invite.email")}
+                    value={invite.email}
+                    onChange={(e) => setInvite((p) => ({ ...p, email: e.target.value }))}
+                  />
+                  <select
+                    className="ui-pill"
+                    value={invite.role}
+                    onChange={(e) => setInvite((p) => ({ ...p, role: e.target.value }))}
+                  >
+                    <option value="CLIENT">{t("settings.users.roles.CLIENT")}</option>
+                    <option value="TECHNICIAN">{t("settings.users.roles.TECHNICIAN")}</option>
+                    <option value="ADMIN">{t("settings.users.roles.ADMIN")}</option>
+                  </select>
+                  <button type="button" className="ui-ghost ui-ghost--primary" onClick={inviteUser}>
+                    <Zap className="h-4 w-4" /> {t("settings.users.invite.button")}
+                  </button>
+                </div>
+                <div className="overflow-hidden rounded-2xl border border-border/60">
+                  <div className="grid grid-cols-3 gap-2 px-3 py-2 text-[11px] font-semibold uppercase text-muted-foreground border-b border-border/60">
+                    <span>{t("settings.users.table.name")}</span>
+                    <span>{t("settings.users.table.email")}</span>
+                    <span>{t("settings.users.table.role")}</span>
+                  </div>
+                  {users.length === 0 ? (
+                    <p className="px-3 py-6 text-xs text-muted-foreground">—</p>
+                  ) : (
+                    users.map((u) => (
+                      <div
+                        key={String(u.companyUserId || u.id)}
+                        className="grid grid-cols-3 gap-2 px-3 py-2 text-xs border-b border-border/40 last:border-b-0 items-center"
+                      >
+                        <span className="truncate font-semibold">{u.name || "—"}</span>
+                        <span className="truncate text-muted-foreground">{u.email || "—"}</span>
+                        <select
+                          className="ui-pill w-full"
+                          value={String(u.role || "CLIENT").toUpperCase()}
+                          onChange={(e) => updateUserRole(u.companyUserId || u.id, e.target.value)}
+                        >
+                          <option value="CLIENT">{t("settings.users.roles.CLIENT")}</option>
+                          <option value="TECHNICIAN">{t("settings.users.roles.TECHNICIAN")}</option>
+                          <option value="ADMIN">{t("settings.users.roles.ADMIN")}</option>
+                        </select>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </GlassCard>
+            )}
+          </div>
+        </div>
+      </AppLayout>
+    </div>
+  );
+}

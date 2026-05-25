@@ -153,6 +153,39 @@ async function queryActiveSensorIds(startTime = '-30d') {
   return out;
 }
 
+/** Dernière ligne capteur (CO2 + télémétrie optionnelle) pour le bandeau UI. */
+async function queryLatestSensorTelemetry(sensorId) {
+  assertSafeSensorId(sensorId);
+  if (!queryApi) {
+    throw new Error('InfluxDB queryApi non initialise');
+  }
+  const query = `
+    from(bucket: "${bucket}")
+      |> range(start: -6h)
+      |> filter(fn: (r) => r._measurement == "co2_readings")
+      |> filter(fn: (r) => r.sensorId == "${sensorId}")
+      |> filter(fn: (r) => r._field == "value" or r._field == "battery" or r._field == "wifiRssi" or r._field == "temperature" or r._field == "humidity")
+      |> last()
+  `;
+  const rows = [];
+  await queryApi.collectRows(query, (row, tableMeta) => {
+    rows.push(tableMeta.toObject(row));
+  });
+  const out = { time: null, value: null, battery: null, wifiRssi: null, temperature: null, humidity: null };
+  for (const r of rows) {
+    if (!out.time && r._time) out.time = r._time;
+    const field = r._field;
+    const val = Number(r._value);
+    if (!Number.isFinite(val)) continue;
+    if (field === 'value') out.value = val;
+    if (field === 'battery') out.battery = val;
+    if (field === 'wifiRssi') out.wifiRssi = val;
+    if (field === 'temperature') out.temperature = val;
+    if (field === 'humidity') out.humidity = val;
+  }
+  return out;
+}
+
 module.exports = {
   connectInflux,
   writePoint,
@@ -160,6 +193,7 @@ module.exports = {
   queryHistoricalDataResilient,
   queryFluxRows,
   queryLastCo2Value,
+  queryLatestSensorTelemetry,
   queryActiveSensorIds,
   getInfluxClient: () => influxClient,
   getWriteApi: () => writeApi

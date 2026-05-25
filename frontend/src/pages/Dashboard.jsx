@@ -17,12 +17,17 @@ import { GlassCard } from "@/components/ui/glass-card";
 import DashboardTopSection from "@/components/dashboard/DashboardTopSection";
 
 export default function Dashboard() {
-  const { current, status, history, forecast, sensor, threshold } = useCO2Data();
+  const { current, status, history, forecast, sensor, threshold, error, isLoading } = useCO2Data();
   const { t } = useTranslation();
 
   return (
     <AppLayout title={t("dashboard_title")} subtitle={t("dashboard_subtitle")}>
       <div className="space-y-8">
+        {error && !isLoading && (
+          <div className="rounded-2xl border border-status-warning/40 bg-status-warning/10 px-4 py-3 text-sm text-status-warning">
+            {error}
+          </div>
+        )}
         {/* TOP section redesign ONLY (charts below stay unchanged) */}
         <DashboardTopSection
           current={current}

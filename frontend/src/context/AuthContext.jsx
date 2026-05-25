@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
                 name: data.user.name?.trim() || data.user.email,
                 email: data.user.email,
                 role: normalizeRole(role),
+                activeCompanyId: data.activeCompanyId ?? data.memberships?.[0]?.companyId ?? null,
             };
             localStorage.setItem("airsense_token", data.token);
             localStorage.setItem("airsense_user", JSON.stringify(safe));
@@ -94,6 +95,7 @@ export function AuthProvider({ children }) {
                 name: data.user.name?.trim() || data.user.email,
                 email: data.user.email,
                 role: normalizeRole(role),
+                activeCompanyId: data.activeCompanyId ?? data.memberships?.[0]?.companyId ?? null,
             };
             localStorage.setItem("airsense_token", data.token);
             localStorage.setItem("airsense_user", JSON.stringify(safe));

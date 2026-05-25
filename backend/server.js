@@ -66,12 +66,15 @@ const httpServer = http.createServer(app);
 // `cors.origin` : liste ou string des origines autorisees pour le navigateur qui ouvre la socket.
 const io = new Server(httpServer, {
   cors: {
-    origin: (
-      process.env.FRONTEND_URL ||
-      'http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080,http://127.0.0.1:5173'
-    )
-      .split(',')
-      .map((s) => s.trim()),
+    origin:
+      String(process.env.NODE_ENV || 'development').toLowerCase() !== 'production'
+        ? true
+        : (
+            process.env.FRONTEND_URL ||
+            'http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080,http://127.0.0.1:5173'
+          )
+            .split(',')
+            .map((s) => s.trim()),
     methods: ['GET', 'POST']
   }
 });
@@ -169,7 +172,15 @@ async function start() {
     startMqttClient(io, writeApi);
     console.log('[mqtt] Client demarre');
 
-    const PORT = process.env.PORT || 4000;
+    const PORT = Number(process.env.PORT || 4000);
+    httpServer.on('error', (err) => {
+      if (err?.code === 'EADDRINUSE') {
+        console.error(`[http] Port ${PORT} deja utilise. Arretez l'ancien backend ou changez PORT dans .env.`);
+        process.exit(1);
+      }
+      console.error('[http] Erreur serveur :', err);
+      process.exit(1);
+    });
     // listen : commence a accepter les connexions TCP sur toutes les interfaces (0.0.0.0) par defaut.
     httpServer.listen(PORT, () => {
       console.log(`[http] http://localhost:${PORT}`);

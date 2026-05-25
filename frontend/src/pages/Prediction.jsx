@@ -5,7 +5,7 @@ import { useCO2Data } from "@/hooks/useCO2Data";
 import { useMemo } from "react";
 import { BrainCircuit, Target, TrendingDown } from "lucide-react";
 export default function Prediction() {
-    const { history, forecast, horizonMinutes, setHorizonMinutes } = useCO2Data();
+    const { history, forecast, predictionMeta, horizonMinutes, setHorizonMinutes } = useCO2Data();
     // Metriques derivees des donnees historiques disponibles
     const metrics = useMemo(() => {
         const sample = history.slice(-24);
@@ -32,7 +32,11 @@ export default function Prediction() {
           <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card px-4 py-2 text-sm">
             <BrainCircuit className="h-4 w-4 text-primary"/>
             <span className="font-medium">Modèle actif :</span>
-            <span className="text-muted-foreground">Modèle prédictif côté serveur</span>
+            <span className="text-muted-foreground">
+              {predictionMeta?.method === "smart_hybrid_v1"
+                ? "smart_hybrid_v1 (trend + EMA + seasonal + uncertainty)"
+                : predictionMeta?.method || "modèle serveur"}
+            </span>
           </div>
           <div className="inline-flex rounded-xl border border-border/60 bg-card p-1">
             {horizons.map((h) => (<button key={h.v} onClick={() => setHorizonMinutes(h.v)} className={`rounded-lg px-4 py-1.5 text-xs font-medium transition ${horizonMinutes === h.v
@@ -81,7 +85,11 @@ export default function Prediction() {
             <div>
               <h3 className="text-base font-semibold">Réel vs Prédiction</h3>
               <p className="text-xs text-muted-foreground">
-                Trait plein = mesures réelles · pointillé = prévisions IA · zone = intervalle de confiance 95%
+                Trait plein = mesures réelles · pointillé = prévisions IA · bornes = intervalle de confiance
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {predictionMeta?.confidence != null ? `Confiance: ${predictionMeta.confidence}% · ` : ""}
+                {predictionMeta?.pointsUsed != null ? `Points utilisés: ${predictionMeta.pointsUsed}` : ""}
               </p>
             </div>
             <div className="flex gap-3 text-xs">

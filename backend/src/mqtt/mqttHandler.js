@@ -201,6 +201,9 @@ function startMqttClient(io, writeApi) {
         sensorId: measurement.sensorId,
         value: measurement.value,
         temperature: measurement.temperature,
+        humidity: measurement.humidity,
+        battery: measurement.battery,
+        wifi: measurement.wifiRssi,
         unit: measurement.unit,
         timestamp: measurement.timestamp
       });

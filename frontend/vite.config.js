@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // PERFORMANCE FIX 3: Code splitting + bundle optimization
 export default defineConfig(({ mode }) => {
-    const backendTarget = process.env.VITE_BACKEND_PROXY_TARGET || "http://localhost:4002";
+    const backendTarget = process.env.VITE_BACKEND_PROXY_TARGET || "http://localhost:4000";
     return ({
     server: {
         host: "::",
@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => {
             "/health": {
                 target: backendTarget,
                 changeOrigin: true,
+            },
+            "/socket.io": {
+                target: backendTarget,
+                changeOrigin: true,
+                ws: true,
             },
         },
     },

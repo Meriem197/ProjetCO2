@@ -54,8 +54,8 @@ export default function Login() {
       <div className="flex items-center justify-center p-6 sm:p-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-6 rounded-3xl border border-border/60 bg-card/80 p-6 shadow-elevated backdrop-blur">
           <div className="space-y-1 text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">{t("login_title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("login_subtitle")}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("login")}</h1>
+            
           </div>
 
           <LoginForm onSubmit={handleLogin}/>

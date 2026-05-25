@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { setUserLanguage } from "@/i18n";
 import { motion } from "framer-motion";
 import { Bell, Battery, Wifi, Radio, User, Wind } from "lucide-react";
 
@@ -36,10 +37,10 @@ export default function Header({ title, subtitle }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-      <div className="px-4 sm:px-6">
-        <div className="flex items-center justify-between gap-3 py-3">
+      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
           {/* Gauche: logo + titre appli */}
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:max-w-[38%]">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
               <Wind className="h-5 w-5 text-white" />
             </div>
@@ -54,8 +55,28 @@ export default function Header({ title, subtitle }) {
             </div>
           </div>
 
-          {/* Centre/Droite: barre d’outils condensée */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Centre: indicateurs système */}
+          <div className="hidden lg:flex flex-1 items-center justify-center">
+            <div className="flex items-center gap-3 rounded-full border border-border/60 bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Radio className={cn("h-3.5 w-3.5", linkOk ? "text-status-good" : "text-status-warning")} />
+                {linkOk ? t("link_ok") : t("link_lost")}
+              </span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1">
+                <Wifi className="h-3.5 w-3.5 text-primary" />
+                {t("wifi_signal")}: {sensor.wifi ?? "--"} dBm
+              </span>
+              <span className="text-border">|</span>
+              <span className="flex items-center gap-1">
+                <Battery className="h-3.5 w-3.5 text-status-good" />
+                {t("battery")}: {sensor.battery ?? "--"}%
+              </span>
+            </div>
+          </div>
+
+          {/* Droite: thème, langue, alertes, profil */}
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Indicateur “live” (sans jargon technique) */}
             <motion.div
               key={lastUpdate}
@@ -72,22 +93,6 @@ export default function Header({ title, subtitle }) {
                 {t("status_updated")} {Math.max(0, Math.round((Date.now() - lastUpdate) / 1000))}s
               </span>
             </motion.div>
-
-            {/* Indicateurs système (compact) */}
-            <div className="hidden md:flex items-center gap-3 rounded-full border border-border/60 bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Radio className={cn("h-3.5 w-3.5", linkOk ? "text-status-good" : "text-status-warning")} />
-                {linkOk ? t("link_ok") : t("link_lost")}
-              </span>
-              <span className="flex items-center gap-1">
-                <Wifi className="h-3.5 w-3.5 text-primary" />
-                {t("wifi_signal")}: {sensor.wifi ?? "--"} dBm
-              </span>
-              <span className="flex items-center gap-1">
-                <Battery className="h-3.5 w-3.5 text-status-good" />
-                {t("battery")}: {sensor.battery ?? "--"}%
-              </span>
-            </div>
 
             {/* Thème */}
             <button
@@ -107,7 +112,7 @@ export default function Header({ title, subtitle }) {
               ].map((lng) => (
                 <button
                   key={lng.code}
-                  onClick={() => i18n.changeLanguage(lng.code)}
+                  onClick={() => setUserLanguage(lng.code)}
                   className={cn(
                     "rounded-full px-3 py-1 text-[11px] font-semibold transition",
                     i18n.language === lng.code

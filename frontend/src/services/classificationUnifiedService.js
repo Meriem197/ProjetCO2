@@ -6,7 +6,7 @@
  *   et respecte VITE_API_URL ou le proxy Vite (/api → backend).
  */
 
-import api, { unwrapApiData } from "@/services/api";
+import api, { resolveApiErrorMessage, unwrapApiData } from "@/services/api";
 
 /**
  * Fetch unified classification stats + time-series (max/mean/min already aggregated in Influx).

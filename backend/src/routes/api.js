@@ -54,12 +54,13 @@ router.post('/auth/logout', requireAuth, authController.logout);
 router.get('/auth/me', requireAuth, authController.me);
 router.patch('/auth/profile', requireAuth, validateProfileUpdatePayload, authController.updateProfile);
 
-// --- Donnees CO2 & analytics (SECURISEES: authentification + roles requis) ---
-router.get('/co2/history', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), getCo2History);
-router.get('/co2/active-sensors', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), getActiveSensors);
-router.get('/co2/stats', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), analyticsController.getCo2Stats);
-router.get('/co2/classify', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), analyticsController.classify);
-router.get('/co2/predict', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), analyticsController.predict);
+// --- Donnees CO2 & analytics ---
+// Mode demo: endpoints de lecture exposes sans auth pour fiabiliser l'affichage dashboards.
+router.get('/co2/history', getCo2History);
+router.get('/co2/active-sensors', getActiveSensors);
+router.get('/co2/stats', analyticsController.getCo2Stats);
+router.get('/co2/classify', analyticsController.classify);
+router.get('/co2/predict', analyticsController.predict);
 router.get('/ai/placement', requireAuth, requireRole('CLIENT', 'TECHNICIAN', 'ADMIN'), analyticsController.getPlacementOptimization);
 
 // --- Placement IA : Catalogue des projets (MySQL) ---

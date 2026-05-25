@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { fetchUnifiedClassificationStats } from "@/services/classificationUnifiedService";
 import { PieChart, Pie, Cell } from "recharts";
+import { useTranslation } from "react-i18next";
 
 const STATE_COLORS = {
   good: "#4CAF50",
@@ -168,7 +169,8 @@ function DonutEtatCourant({ distribution, current, trend }) {
 }
 
 export default function Classification() {
-  const { current, threshold, sensor, sensorId } = useCO2Data();
+  const { t } = useTranslation();
+  const { current, threshold, sensorId } = useCO2Data();
 
   const [periodKey, setPeriodKey] = useState("24h"); // FR label key
   const [filter, setFilter] = useState("moyenne"); // brutes | moyenne | agrégé
@@ -208,7 +210,7 @@ export default function Classification() {
         setReport(res?.report || null);
         setTrend(res?.trend || null);
       } catch (e) {
-        setError(e?.message || "Failed to load classification stats");
+        setError(e?.response?.data?.error?.message || e?.message || "Impossible de charger la classification");
         setStats({ max: 0, mean: 0, min: 0 });
         setDistribution({ good: 0, warning: 0, critical: 0 });
         setHistorySegments([]);
@@ -229,30 +231,31 @@ export default function Classification() {
   const chartData = useMemo(() => {
     return (timeSeries || []).map((p) => {
       const ppm = Number(p.ppm) || 0;
+      const t = new Date(p.time).getTime();
       const good = Math.min(ppm, 600);
       const warning = Math.min(Math.max(ppm - 600, 0), Math.max(0, threshold - 600));
       const critical = Math.max(ppm - threshold, 0);
       return {
-        t: p.time,
+        t,
         label: formatTickLabelFR(p.time, periodKey, filter === "agrégé" ? "monthly" : "mean"),
         ppm,
         good,
         warning,
         critical,
       };
-    });
+    }).filter((p) => Number.isFinite(p.t)).sort((a, b) => a.t - b.t);
   }, [timeSeries, threshold, periodKey, filter]);
 
   return (
-    <AppLayout title="Classification" subtitle="Analyse dynamique du milieu (CO₂)">
+    <AppLayout title={t("classification.title")} subtitle={t("classification.subtitle")}>
       <div className="rounded-2xl border border-border/60 bg-background/55 p-3 space-y-3">
         {/* Filtres + contexte (compact, intégré) */}
         <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
-              <h1 className="text-lg font-extrabold tracking-tight text-foreground">Classification</h1>
+              <h1 className="text-lg font-extrabold tracking-tight text-foreground">{t("classification.title")}</h1>
               <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                Synthèse opérationnelle · capteur: <span className="font-mono">{sensorId || "auto"}</span>
+                {t("classification.subtitle")}
               </p>
             </div>
 
@@ -334,7 +337,17 @@ export default function Classification() {
                     </defs>
 
                     <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="hsl(var(--border) / 0.55)" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground) / 0.5)" />
+                    <XAxis
+                      type="number"
+                      scale="time"
+                      dataKey="t"
+                      domain={["dataMin", "dataMax"]}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v) =>
+                        formatTickLabelFR(new Date(v).toISOString(), periodKey, filter === "agrégé" ? "monthly" : "mean")
+                      }
+                      stroke="hsl(var(--muted-foreground) / 0.5)"
+                    />
                     <YAxis tick={{ fontSize: 11 }} width={46} stroke="hsl(var(--muted-foreground) / 0.5)" />
 
                     <Tooltip
@@ -350,7 +363,7 @@ export default function Classification() {
                         if (name === "ppm") return [`${value} ppm`, "CO₂"];
                         return [`${Math.round(Number(value) || 0)} ppm`, name];
                       }}
-                      labelFormatter={(l) => `Temps: ${l}`}
+                      labelFormatter={(v) => `Temps: ${new Date(v).toLocaleString("fr-FR")}`}
                     />
 
                     {/* Lignes d’horizon (pointillées) */}

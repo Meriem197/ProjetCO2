@@ -6,18 +6,30 @@ import ar from "./ar.json";
 import frFlat from "@/locales/fr.json";
 import enFlat from "@/locales/en.json";
 import arFlat from "@/locales/ar.json";
-import settingsJson from "./settings.json";
+/*import settingsFr from "./settings.json";*/
+/*import settingsEn from "./settings.en.json";*/
+/*import settingsAr from "./settings.ar.json";*/
 
-const storedLanguage = localStorage.getItem("airsense_lang");
-const initialLanguage = storedLanguage || "fr";
+const LANG_STORAGE_KEY = "airsense_lang";
+const LANG_USER_CHOICE_KEY = "airsense_lang_user_choice";
+
+/** Français au premier démarrage ; autre langue uniquement après clic explicite dans le Header. */
+function resolveInitialLanguage() {
+  const userChose = localStorage.getItem(LANG_USER_CHOICE_KEY) === "1";
+  const stored = localStorage.getItem(LANG_STORAGE_KEY);
+  if (userChose && stored && ["fr", "en", "ar"].includes(stored)) {
+    return stored;
+  }
+  return "fr";
+}
+
+const initialLanguage = resolveInitialLanguage();
 
 i18n.use(initReactI18next).init({
   resources: {
-    // Compat: certaines pages utilisent des clés “plates” (ex: sidebar_dashboard),
-    // d’autres utilisent des namespaces (ex: status.realtime). On fusionne les 2.
-    fr: { translation: { ...frFlat, ...fr, ...settingsJson } },
-    en: { translation: { ...enFlat, ...en, ...settingsJson } },
-    ar: { translation: { ...arFlat, ...ar, ...settingsJson } },
+    fr: { translation: { ...frFlat, ...fr } },
+    en: { translation: { ...enFlat, ...en } },
+    ar: { translation: { ...arFlat, ...ar } },
   },
   lng: initialLanguage,
   fallbackLng: "fr",
@@ -27,7 +39,14 @@ i18n.use(initReactI18next).init({
 function applyDocumentLanguage(language) {
   document.documentElement.lang = language;
   document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-  localStorage.setItem("airsense_lang", language);
+  localStorage.setItem(LANG_STORAGE_KEY, language);
+}
+
+/** À appeler uniquement depuis le sélecteur de langue du Header. */
+export function setUserLanguage(language) {
+  if (!["fr", "en", "ar"].includes(language)) return;
+  localStorage.setItem(LANG_USER_CHOICE_KEY, "1");
+  i18n.changeLanguage(language);
 }
 
 applyDocumentLanguage(i18n.language);

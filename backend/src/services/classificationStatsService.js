@@ -24,7 +24,8 @@ const AGGREGATION_MAP = {
 // Assumed standard IoT schema (can adapt later if needed)
 const SENSOR_TAG = 'sensorId';
 const MEASUREMENT = 'co2_readings';
-const FIELD = 'ppm';
+// Aligné sur mqttHandler / influxService (field Influx = "value")
+const FIELD = 'value';
 
 function isValidWindow(period) {
   return period in WINDOW_MAP;

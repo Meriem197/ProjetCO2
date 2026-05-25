@@ -52,7 +52,7 @@ async function getClassificationAggregations(params = {}) {
   const fluxQuery = `
     from(bucket: "${bucket}")
       |> range(start: ${fluxPeriod})
-      |> filter(fn: (r) => r._measurement == "co2_reading" and r._field == "ppm")
+      |> filter(fn: (r) => r._measurement == "co2_readings" and r._field == "value")
       |> stats.max()
   `;
 
@@ -148,7 +148,7 @@ async function getClassificationTimeSeries(params = {}) {
   const fluxQuery = `
     from(bucket: "${bucket}")
       |> range(start: ${fluxPeriod})
-      |> filter(fn: (r) => r._measurement == "co2_reading" and r._field == "ppm")
+      |> filter(fn: (r) => r._measurement == "co2_readings" and r._field == "value")
       |> limit(n: ${limit})
   `;
 

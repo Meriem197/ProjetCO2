@@ -14,9 +14,15 @@
  * =============================================================================
  */
 
-const { queryHistoricalDataResilient, queryActiveSensorIds } = require('../services/influxService');
+const {
+  queryHistoricalDataResilient,
+  queryLatestSensorTelemetry,
+  queryActiveSensorIds
+} = require('../services/influxService');
+const { listRecentSensorUidsFromMySQL } = require('../services/sensorResolver');
 const mysqlService = require('../services/mysqlService');
 const classificationService = require('../services/classificationService');
+const { resolveSensorId, isValidSensorId } = require('../services/sensorResolver');
 const { successResponse } = require('../utils/apiResponse');
 const { HttpError } = require('../utils/httpError');
 
@@ -33,17 +39,6 @@ function isValidStartRange(value) {
   return /^-\d+(ms|s|m|h|d|w)$/.test(value);
 }
 
-/** Identifiant capteur alphanumerique + _ - (evite injection dans les requetes Flux). */
-function isValidSensorId(value) {
-  return typeof value === 'string' && /^[\w-]+$/.test(value);
-}
-
-async function resolveSensorIdOrFallback(requestedSensorId) {
-  const clean = typeof requestedSensorId === 'string' ? requestedSensorId.trim() : '';
-  if (clean) return clean;
-  const active = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
-  return active[0] || '';
-}
 
 /**
  * GET /co2/history?sensorId=...&start=-24h
@@ -61,29 +56,82 @@ async function getCo2History(req, res, next) {
   }
 
   try {
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
-    if (!sensorId) return next(new HttpError(404, 'Aucun capteur actif detecte dans InfluxDB', 'NO_ACTIVE_SENSOR'));
-    if (!isValidSensorId(sensorId)) {
-      return next(
-        new HttpError(400, 'sensorId invalide (lettres, chiffres, tirets et underscores)', 'VALIDATION_ERROR')
+    const primarySensorId = await resolveSensorId(requestedSensorId);
+    const influxCandidates = await queryActiveSensorIds('-30d')
+      .then((ids) => ids.filter((id) => id && id !== 'unknown'))
+      .catch((err) => {
+        console.warn(`[data] active sensors Influx indisponible: ${err.message}`);
+        return [];
+      });
+    const mysqlCandidates = await listRecentSensorUidsFromMySQL(10);
+
+    const candidates = [
+      requestedSensorId,
+      primarySensorId,
+      ...mysqlCandidates,
+      ...influxCandidates
+    ]
+      .map((id) => String(id || '').trim())
+      .filter((id, idx, arr) => id && isValidSensorId(id) && arr.indexOf(id) === idx)
+      .slice(0, 8);
+
+    if (candidates.length === 0) {
+      return res.json(
+        successResponse([], {
+          sensorId: null,
+          start,
+          count: 0,
+          sensor: null,
+          telemetry: null,
+          hint: 'NO_SENSOR'
+        })
       );
     }
+
     const t0 = Date.now();
-    const [data, sensor] = await Promise.all([
-      queryHistoricalDataResilient(sensorId, start),
-      mysqlService.getSensorMetadataForHistory(sensorId)
+    let selectedSensorId = candidates[0];
+    let data = [];
+    let usedStart = start;
+    for (const candidate of candidates) {
+      const rows = await queryHistoricalDataResilient(candidate, start);
+      if (Array.isArray(rows) && rows.length > 0) {
+        selectedSensorId = candidate;
+        data = rows;
+        break;
+      }
+    }
+
+    // Fallback: si la fenêtre demandée est vide (souvent -24h),
+    // élargir pour récupérer un historique exploitable côté UI.
+    if (data.length === 0 && start === '-24h') {
+      for (const candidate of candidates) {
+        const rows = await queryHistoricalDataResilient(candidate, '-30d');
+        if (Array.isArray(rows) && rows.length > 0) {
+          selectedSensorId = candidate;
+          // Garde une fenêtre raisonnable pour le front (288 points ~24h à 5 min)
+          data = rows.slice(-288);
+          usedStart = '-30d';
+          break;
+        }
+      }
+    }
+
+    const [sensor, telemetry] = await Promise.all([
+      mysqlService.getSensorMetadataForHistory(selectedSensorId),
+      queryLatestSensorTelemetry(selectedSensorId).catch(() => null)
     ]);
     const latencyMs = Date.now() - t0;
     if (latencyMs > LATENCY_TARGET_MS) {
       console.warn(`[PERF] getCo2History ${latencyMs}ms (seuil ${LATENCY_TARGET_MS}ms)`);
     }
-    // `data` : tableau de points { time, value, sensorId } ; `sensor` : metadonnees MySQL ou null.
     return res.json(
       successResponse(data, {
-        sensorId,
-        start,
+        sensorId: selectedSensorId,
+        start: usedStart,
         count: data.length,
         sensor,
+        telemetry,
+        candidatesTried: candidates.length,
         latencyMs
       })
     );
@@ -107,8 +155,15 @@ function getApiStatus(req, res) {
 
 async function getActiveSensors(req, res, next) {
   try {
-    const ids = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
-    return res.json(successResponse(ids, { count: ids.length }));
+    const influxIds = await queryActiveSensorIds('-30d')
+      .then((ids) => ids.filter((id) => id && id !== 'unknown'))
+      .catch((err) => {
+        console.warn(`[data] active sensors Influx indisponible: ${err.message}`);
+        return [];
+      });
+    const mysqlIds = await listRecentSensorUidsFromMySQL(10);
+    const merged = [...new Set([...mysqlIds, ...influxIds])];
+    return res.json(successResponse(merged, { count: merged.length }));
   } catch (err) {
     return next(err);
   }

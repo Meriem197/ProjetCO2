@@ -40,6 +40,7 @@
   "history_24h": "Historique 24h",
   "history_desc": "Mesures CO2 glissantes - pas 5 min",
   "prediction_30m": "Prediction IA - 30 min",
-  "prediction_desc": "Projection backend sur donnees temps reel"
+  "prediction_desc": "Projection backend sur donnees temps reel",
+  "profile": "Profil"
 }
 

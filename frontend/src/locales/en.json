@@ -40,6 +40,7 @@
   "history_24h": "24h history",
   "history_desc": "Rolling CO2 measurements - 5 min step",
   "prediction_30m": "AI prediction - 30 min",
-  "prediction_desc": "Backend projection on real-time data"
+  "prediction_desc": "Backend projection on real-time data",
+  "profile": "Profile"
 }
 

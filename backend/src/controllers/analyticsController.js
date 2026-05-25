@@ -1,9 +1,10 @@
 /**
  * Statistiques Influx, classification qualite air, prediction (base IA — cahier des charges).
  */
-const { queryHistoricalDataResilient, queryLastCo2Value, queryActiveSensorIds } = require('../services/influxService');
+const { queryHistoricalDataResilient, queryLastCo2Value } = require('../services/influxService');
 const mysqlService = require('../services/mysqlService');
-const { classifyPpm, predictLinear } = require('../services/aiService');
+const { resolveSensorId, isValidSensorId } = require('../services/sensorResolver');
+const { classifyPpm, predictLinear, predictSmart } = require('../services/aiService');
 const { successResponse } = require('../utils/apiResponse');
 const { HttpError } = require('../utils/httpError');
 
@@ -11,16 +12,6 @@ function isValidStartRange(value) {
   return /^-\d+(ms|s|m|h|d|w)$/.test(value);
 }
 
-function isValidSensorId(value) {
-  return typeof value === 'string' && /^[\w-]+$/.test(value);
-}
-
-async function resolveSensorIdOrFallback(requestedSensorId) {
-  const clean = typeof requestedSensorId === 'string' ? requestedSensorId.trim() : '';
-  if (clean) return clean;
-  const active = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
-  return active[0] || '';
-}
 
 async function getCo2Stats(req, res, next) {
   const requestedSensorId = typeof req.query.sensorId === 'string' ? req.query.sensorId.trim() : '';
@@ -29,8 +20,10 @@ async function getCo2Stats(req, res, next) {
     return next(new HttpError(400, 'start invalide (ex: -24h)', 'VALIDATION_ERROR'));
   }
   try {
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
-    if (!sensorId) return next(new HttpError(404, 'Aucun capteur actif detecte dans InfluxDB', 'NO_ACTIVE_SENSOR'));
+    const sensorId = await resolveSensorId(requestedSensorId);
+    if (!sensorId) {
+      return res.json(successResponse({ min: null, max: null, mean: null, count: 0, sensorId: null, start }));
+    }
     if (!isValidSensorId(sensorId)) {
       return next(new HttpError(400, 'sensorId invalide', 'VALIDATION_ERROR'));
     }
@@ -65,7 +58,7 @@ async function classify(req, res, next) {
       return res.json(successResponse(classification));
     }
     const requestedSensorId = typeof req.query.sensorId === 'string' ? req.query.sensorId.trim() : '';
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
+    const sensorId = await resolveSensorId(requestedSensorId);
     if (!sensorId) {
       return next(new HttpError(400, 'Fournir value=ppm ou sensorId=', 'VALIDATION_ERROR'));
     }
@@ -96,13 +89,27 @@ async function predict(req, res, next) {
   const requestedSensorId = typeof req.query.sensorId === 'string' ? req.query.sensorId.trim() : '';
   const horizon = parseInt(req.query.horizonMinutes, 10) || 30;
   try {
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
-    if (!sensorId) return next(new HttpError(404, 'Aucun capteur actif detecte dans InfluxDB', 'NO_ACTIVE_SENSOR'));
+    const sensorId = await resolveSensorId(requestedSensorId);
+    if (!sensorId) {
+      return res.json(
+        successResponse({
+          sensorId: null,
+          predictedPpm: null,
+          message: 'Aucune mesure disponible pour la prediction'
+        })
+      );
+    }
     if (!isValidSensorId(sensorId)) {
       return next(new HttpError(400, 'sensorId invalide', 'VALIDATION_ERROR'));
     }
     const points = await queryHistoricalDataResilient(sensorId, '-48h');
-    const prediction = predictLinear(points, horizon);
+    let prediction = null;
+    try {
+      prediction = predictSmart(points, horizon, 5);
+    } catch (_err) {
+      // Fallback robuste pour petites series / cas limites.
+      prediction = predictLinear(points, horizon);
+    }
     return res.json(successResponse({ sensorId, ...prediction }));
   } catch (err) {
     return next(err);

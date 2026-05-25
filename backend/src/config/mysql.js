@@ -33,7 +33,10 @@ async function connectMySQL() {
     // Charge Site, Sensor et associations (side-effect sur l'instance sequelize).
     require('../models');
 
-    const defaultSyncMode = process.env.NODE_ENV === 'production' ? 'off' : 'alter';
+    // Par defaut on n'altere pas le schema en runtime.
+    // `alter` sur des schemas evolutifs peut empiler des index et finir en
+    // "Too many keys specified; max 64 keys allowed".
+    const defaultSyncMode = 'off';
     const syncMode = String(process.env.MYSQL_SYNC_MODE || defaultSyncMode).toLowerCase();
     if (syncMode === 'off') {
       console.log('[mysql] sequelize.sync desactive (mode migration SQL recommande)');
@@ -48,8 +51,18 @@ async function connectMySQL() {
       syncOptions.force = true;
     }
 
-    await sequelize.sync(syncOptions);
-    console.log(`[mysql] Tables synchronisees (sequelize.sync mode=${syncMode})`);
+    try {
+      await sequelize.sync(syncOptions);
+      console.log(`[mysql] Tables synchronisees (sequelize.sync mode=${syncMode})`);
+    } catch (syncErr) {
+      const msg = String(syncErr?.message || '');
+      if (msg.includes('Too many keys specified; max 64 keys allowed')) {
+        console.warn('[mysql] sequelize.sync ignore: limite d index MySQL atteinte.');
+        console.warn('[mysql] Passez a des migrations SQL et laissez MYSQL_SYNC_MODE=off.');
+        return;
+      }
+      throw syncErr;
+    }
   } catch (err) {
     console.error('[mysql] Echec connexion :', err.message);
     throw err;

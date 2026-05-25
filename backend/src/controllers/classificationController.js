@@ -5,7 +5,7 @@
 const { successResponse } = require('../utils/apiResponse');
 const { HttpError } = require('../utils/httpError');
 const { getClassificationStats, isValidWindow, isValidAggregation } = require('../services/classificationStatsService');
-const { queryActiveSensorIds } = require('../services/influxService');
+const { resolveSensorId } = require('../services/sensorResolver');
 
 function parsePeriod(period) {
   return typeof period === 'string' ? period : '24h';
@@ -39,11 +39,28 @@ function parseNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-async function resolveSensorIdOrFallback(requestedSensorId) {
-  const clean = typeof requestedSensorId === 'string' ? requestedSensorId.trim() : '';
-  if (clean) return clean;
-  const active = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
-  return active[0] || '';
+function emptyClassificationPayload({ period, threshold, aggregation, sensorId = null }) {
+  return {
+    sensorId,
+    period,
+    threshold,
+    aggregation,
+    bucketEvery: null,
+    current: 0,
+    currentTime: null,
+    trend: { ppmPerHour: null, deltaPpm: null },
+    stats: { max: 0, mean: 0, min: 0, maxClass: 'unknown', meanClass: 'unknown', minClass: 'unknown' },
+    distribution: { good: 0, warning: 0, critical: 0, unknown: 100, totalPoints: 0 },
+    history: [],
+    report: {
+      periodLabel: period,
+      predominantState: 'unknown',
+      predominantStateLabel: '—',
+      summary: 'Aucune mesure CO₂ sur la période sélectionnée.',
+      recommendation: 'Vérifiez la liaison capteur et attendez les premières mesures.',
+    },
+    timeSeries: [],
+  };
 }
 
 async function getClassificationStatsEndpoint(req, res, next) {
@@ -61,9 +78,14 @@ async function getClassificationStatsEndpoint(req, res, next) {
       return next(new HttpError(400, `Invalid aggregation: ${aggregation}`, 'VALIDATION_ERROR'));
     }
 
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
+    const sensorId = await resolveSensorId(requestedSensorId);
     if (!sensorId) {
-      return next(new HttpError(404, 'Aucun capteur actif detecte dans InfluxDB', 'NO_ACTIVE_SENSOR'));
+      return res.json(
+        successResponse(
+          emptyClassificationPayload({ period, threshold, aggregation }),
+          { period, hint: 'NO_SENSOR' }
+        )
+      );
     }
 
     const payload = await getClassificationStats({ period, threshold, sensorId, limit, aggregation });
@@ -92,9 +114,14 @@ async function getClassificationUnifiedEndpoint(req, res, next) {
       return next(new HttpError(400, `Invalid filter: ${aggregation}`, 'VALIDATION_ERROR'));
     }
 
-    const sensorId = await resolveSensorIdOrFallback(requestedSensorId);
+    const sensorId = await resolveSensorId(requestedSensorId);
     if (!sensorId) {
-      return next(new HttpError(404, 'Aucun capteur actif detecte dans InfluxDB', 'NO_ACTIVE_SENSOR'));
+      return res.json(
+        successResponse(
+          emptyClassificationPayload({ period, threshold, aggregation }),
+          { period, hint: 'NO_SENSOR' }
+        )
+      );
     }
 
     const payload = await getClassificationStats({ period, threshold, sensorId, limit, aggregation });
