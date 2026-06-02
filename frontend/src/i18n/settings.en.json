@@ -1,0 +1,141 @@
+{
+  "settings": {
+    "title": "Settings",
+    "subtitle": "CO₂ Monitoring System Configuration",
+
+    "errors": {
+      "load_failed": "Failed to load settings",
+      "save_failed": "Failed to save settings"
+    },
+
+    "common": {
+      "tabs": "Sections",
+      "profile": "Profile",
+      "access": "Access",
+      "loading": "Loading…",
+      "error": "Error",
+      "save": "Save",
+      "refresh": "Refresh",
+      "readonly": "Read-only",
+      "admin_only": "Administrator only",
+      "admin_or_tech": "Administrator and Technician only",
+      "client_hidden": "Hidden for clients",
+      "saved": "Settings saved"
+    },
+
+    "positioning": {
+      "tabs": {
+        "title": "Positioning",
+        "desc": "Tested zones and GPS reference"
+      },
+      "title": "Positioning Management",
+      "desc": "The system compares locations and sets the optimal position.",
+      "zones_testees": "Tested zones",
+      "zone": "Zone",
+      "score": "Score",
+      "recommended": "Recommended",
+      "fix_position": "Validate final position",
+      "fix_position_disabled": "Available after comparative analysis",
+      "not_implemented": "Use the 'Positioning Optimization' page for full analysis.",
+      "gps_reference": "Reference Coordinates",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "geofencing": "Tolerance Zone",
+      "radius_m": "Radius",
+      "radius_hint": "From 5 to 30 meters"
+    },
+
+    "thresholds": {
+      "tabs": {
+        "title": "Thresholds",
+        "desc": "Alert levels and prediction"
+      },
+      "title": "CO₂ Thresholds and Prediction",
+      "desc": "Configure alert levels and prediction horizon.",
+      "limit_good": "Normal limit (ppm)",
+      "limit_warning": "Warning limit (ppm)",
+      "limit_critical": "Critical limit (ppm)",
+      "model": "Prediction model",
+      "horizon": "Prediction horizon (minutes)",
+      "models": {
+        "standard": "Standard model",
+        "advanced": "Advanced model"
+      },
+      "badges": {
+        "good": "Normal",
+        "warning": "Warning",
+        "critical": "Critical"
+      }
+    },
+
+    "iot": {
+      "tabs": {
+        "title": "Sensors",
+        "desc": "Communication and sampling"
+      },
+      "title": "Sensors and Communication",
+      "desc": "Network, real-time connection and diagnostics.",
+      "sampling": "Sampling frequency",
+      "sampling_s": "seconds",
+      "wifi_ssid": "Wi‑Fi Network",
+      "wifi_password": "Wi‑Fi Password",
+      "mqtt_host": "Connection Server",
+      "mqtt_port": "Port",
+      "mqtt_topic": "Measurement Channel",
+      "sensor_id_placeholder": "Sensor ID",
+      "diagnostics": "Diagnostics",
+      "ping": "Test connection",
+      "ping_done": "Test completed",
+      "ping_failed": "Test failed",
+      "calibrate": "Calibrate sensor",
+      "results": {
+        "rssi": "Signal (dBm)",
+        "battery": "Battery (%)",
+        "last_measure": "Last measurement",
+        "mqtt_status": "Connection status"
+      }
+    },
+
+    "notify": {
+      "tabs": {
+        "title": "Notifications",
+        "desc": "Email alerts and channels"
+      },
+      "title": "Notifications",
+      "email": "Email alerts",
+      "push": "In-app notifications",
+      "slack": "Team channel (Slack)",
+      "slack_url": "Channel URL",
+      "discord": "Team channel (Discord)",
+      "discord_url": "Channel URL"
+    },
+
+    "users": {
+      "tabs": {
+        "title": "Team",
+        "desc": "Accounts and access"
+      },
+      "title": "Team Management",
+      "desc": "Invitations and operational roles.",
+      "invite_created": "Invitation sent",
+      "invite_failed": "Invitation failed",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "action": "Action"
+      },
+      "invite": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "button": "Invite"
+      },
+      "roles": {
+        "ADMIN": "Administrator",
+        "TECHNICIAN": "Technician",
+        "CLIENT": "Client"
+      }
+    }
+  }
+}
