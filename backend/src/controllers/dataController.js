@@ -57,12 +57,7 @@ async function getCo2History(req, res, next) {
 
   try {
     const primarySensorId = await resolveSensorId(requestedSensorId);
-    const influxCandidates = await queryActiveSensorIds('-30d')
-      .then((ids) => ids.filter((id) => id && id !== 'unknown'))
-      .catch((err) => {
-        console.warn(`[data] active sensors Influx indisponible: ${err.message}`);
-        return [];
-      });
+    const influxCandidates = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
     const mysqlCandidates = await listRecentSensorUidsFromMySQL(10);
 
     const candidates = [
@@ -155,12 +150,7 @@ function getApiStatus(req, res) {
 
 async function getActiveSensors(req, res, next) {
   try {
-    const influxIds = await queryActiveSensorIds('-30d')
-      .then((ids) => ids.filter((id) => id && id !== 'unknown'))
-      .catch((err) => {
-        console.warn(`[data] active sensors Influx indisponible: ${err.message}`);
-        return [];
-      });
+    const influxIds = (await queryActiveSensorIds('-30d')).filter((id) => id && id !== 'unknown');
     const mysqlIds = await listRecentSensorUidsFromMySQL(10);
     const merged = [...new Set([...mysqlIds, ...influxIds])];
     return res.json(successResponse(merged, { count: merged.length }));
