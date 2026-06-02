@@ -1,0 +1,35 @@
+{
+  "menu": {
+    "dashboard": "لوحة التحكم",
+    "surveillance": "المراقبة",
+    "prediction": "التنبؤ بالذكاء الاصطناعي",
+    "classification": "التصنيف",
+    "alerts": "التنبيهات",
+    "placement": "التموضع",
+    "settings": "الإعدادات"
+  },
+  "dashboard": {
+    "currentCO2": "ثاني أكسيد الكربون الحالي",
+    "avg24h": "متوسط 24 ساعة",
+    "max24h": "الحد الأقصى 24 ساعة",
+    "min24h": "الحد الأدنى 24 ساعة"
+  },
+  "quality": {
+    "label": "جودة الهواء",
+    "healthy": "صحي",
+    "moderate": "متوسط",
+    "critical": "حرج"
+  },
+  "topbar": {
+    "synced": "متزامن",
+    "disconnected": "غير متصل",
+    "updated": "تم التحديث"
+  },
+  "user": {
+    "name": "مريم",
+    "role": "مسؤول"
+  },
+  "common": {
+    "logout": "تسجيل الخروج"
+  }
+}

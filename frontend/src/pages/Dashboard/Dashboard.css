@@ -1,0 +1,127 @@
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.chart-card {
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  background: var(--bg-light);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 200, 150, 0.05);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  gap: var(--spacing-md);
+}
+
+.chart-placeholder svg {
+  opacity: 0.5;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.stat-card {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--bg-light);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.stat-card h4 {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-md);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.stat-count {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.stat-status {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.stat-status.connected {
+  color: var(--primary);
+}
+
+.stat-quality {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--warning);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.stat-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    gap: var(--spacing-lg);
+  }
+  
+  .kpi-grid, .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-placeholder {
+    height: 200px;
+  }
+}

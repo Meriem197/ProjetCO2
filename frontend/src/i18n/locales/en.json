@@ -1,0 +1,35 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "surveillance": "Surveillance",
+    "prediction": "AI Prediction",
+    "classification": "Classification",
+    "alerts": "Alerts",
+    "placement": "Placement",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "currentCO2": "Current CO₂",
+    "avg24h": "24h Average",
+    "max24h": "24h Maximum",
+    "min24h": "24h Minimum"
+  },
+  "quality": {
+    "label": "Air Quality",
+    "healthy": "Healthy",
+    "moderate": "Moderate",
+    "critical": "Critical"
+  },
+  "topbar": {
+    "synced": "Synced",
+    "disconnected": "Disconnected",
+    "updated": "Updated"
+  },
+  "user": {
+    "name": "Meriem",
+    "role": "Admin"
+  },
+  "common": {
+    "logout": "Logout"
+  }
+}

@@ -1,0 +1,22 @@
+.main-layout { display: flex; }
+.main-layout.compact { --sidebar-width: 80px; }
+.main-layout:not(.compact) { --sidebar-width: 280px; }
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  margin-top: 64px;
+  padding: 24px;
+  flex: 1;
+  min-height: calc(100vh - 64px);
+  background: var(--bg-dark);
+  transition: margin-left var(--transition-base);
+}
+
+@media (max-width: 1200px) {
+  .main-layout { --sidebar-width: 80px; }
+}
+
+@media (max-width: 768px) {
+  .main-layout { --sidebar-width: 0; }
+  .main-content { margin-left: 0; padding: 16px; }
+}
