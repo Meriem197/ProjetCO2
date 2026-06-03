@@ -39,7 +39,7 @@ function buildCorsMiddleware() {
       return callback(new Error('Origine non autorisee par CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-company-id'],
     credentials: false
   });
 }

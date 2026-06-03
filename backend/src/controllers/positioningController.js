@@ -13,9 +13,17 @@ function pickRole(req) {
 
 async function list(req, res, next) {
   try {
+    // Si l'utilisateur n'a pas de companyId (compte non rattaché), retourner liste vide
+    if (!req.user?.activeCompanyId) {
+      return res.json(successResponse([]));
+    }
     const rows = await positioningService.listPositions(req.user);
     return res.json(successResponse(rows.map((r) => r.toJSON())));
   } catch (err) {
+    // Ne pas crasher en 500 si MySQL ou companyId pose problème — retourner liste vide
+    if (err.message && (err.message.includes('companyId') || err.message.includes('indisponible'))) {
+      return res.json(successResponse([]));
+    }
     return next(err);
   }
 }
@@ -92,4 +100,3 @@ module.exports = {
   compare,
   finalize
 };
-

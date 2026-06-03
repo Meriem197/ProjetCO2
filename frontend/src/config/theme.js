@@ -1,7 +1,7 @@
 /**
  * AirSense IoT Design System
  * Centralized color palette, typography, and styling constants
- */
+ 
 
 export const colors = {
   primary: '#00C896',
@@ -109,4 +109,4 @@ export const zIndex = {
   popover: '600',
   tooltip: '700',
   notification: '800',
-};
+};*/

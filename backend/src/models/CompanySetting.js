@@ -12,7 +12,7 @@ module.exports = function defineCompanySetting(sequelize) {
       companyId: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false, unique: true, field: 'company_id' },
 
       // Seuils (ppm)
-      limitGood: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 600, field: 'limit_good' },
+      limitGood: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 800, field: 'limit_good' },
       limitWarning: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 1000, field: 'limit_warning' },
       limitCritical: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 1400, field: 'limit_critical' },
 
@@ -34,7 +34,9 @@ module.exports = function defineCompanySetting(sequelize) {
       notifyWebhookSlack: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'notify_webhook_slack' },
       slackWebhookUrl: { type: DataTypes.STRING(512), allowNull: true, field: 'slack_webhook_url' },
       notifyWebhookDiscord: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'notify_webhook_discord' },
-      discordWebhookUrl: { type: DataTypes.STRING(512), allowNull: true, field: 'discord_webhook_url' }
+      discordWebhookUrl: { type: DataTypes.STRING(512), allowNull: true, field: 'discord_webhook_url' },
+      companyName: { type: DataTypes.STRING(255), allowNull: true, field: 'company_name' },
+      factoryLocation: { type: DataTypes.STRING(255), allowNull: true, field: 'factory_location' }
     },
     {
       tableName: 'company_settings',

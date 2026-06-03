@@ -36,40 +36,98 @@ function normalize01(x, min, max) {
   return Math.max(0, Math.min(1, (x - min) / (max - min)));
 }
 
+function retentionFromMean(mean) {
+  if (!Number.isFinite(mean) || mean <= 0) return null;
+  return Math.max(55, Math.min(98, Math.round(100 - Math.max(0, mean - 500) / 12)));
+}
+
+async function queryPositionMeanCo2(positionId, durationMinutes) {
+  const bucket = process.env.INFLUX_BUCKET || 'co2_data';
+  const duration = Math.max(5, Math.min(Number(durationMinutes) || 30, 240));
+  const fluxQuery = `
+    from(bucket: "${bucket}")
+      |> range(start: -${duration}m)
+      |> filter(fn: (r) => r._measurement == "co2_readings")
+      |> filter(fn: (r) => r._field == "value")
+      |> filter(fn: (r) => (r.positionId == "${positionId}" or r.position_id == "${positionId}"))
+      |> mean()
+  `;
+  try {
+    const points = await queryFluxRows(fluxQuery);
+    const values = points.map((p) => Number(p._value)).filter((n) => Number.isFinite(n));
+    if (!values.length) return null;
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  } catch {
+    return null;
+  }
+}
+
 async function listPositions(user) {
-  assertMysql();
-  const companyId = resolveCompanyId(user);
-  return PositioningPosition.findAll({
-    where: { companyId },
-    order: [['created_at', 'DESC']]
-  });
+  try {
+    assertMysql();
+    const companyId = resolveCompanyId(user);
+    const rows = await PositioningPosition.findAll({
+      where: { companyId },
+      order: [['created_at', 'DESC']]
+    });
+
+    const enriched = [];
+    for (const row of rows) {
+      const json = row.toJSON();
+      const mean = await queryPositionMeanCo2(json.id, json.durationMinutes);
+      if (mean != null) {
+        json.avgCo2Ppm = Number(mean.toFixed(1));
+        json.retentionRate = retentionFromMean(mean);
+      }
+      enriched.push(json);
+    }
+    return enriched;
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
 }
 
 async function createPosition(payload, user) {
-  assertMysql();
-  const companyId = resolveCompanyId(user);
-  const name = String(payload?.name || '').trim();
-  const zone = String(payload?.zone || '').trim();
-  const durationMinutes = Math.max(5, Math.min(Number(payload?.durationMinutes) || 30, 240));
-  if (!name || !zone) throw new HttpError(400, 'name et zone requis', 'VALIDATION_ERROR');
+  try {
+    assertMysql();
+    const companyId = resolveCompanyId(user);
+    const name = String(payload?.name || '').trim();
+    const zone = String(payload?.zone || '').trim();
+    const durationMinutes = Math.max(5, Math.min(Number(payload?.durationMinutes) || 30, 240));
+    if (!name || !zone) throw new HttpError(400, 'name et zone requis', 'VALIDATION_ERROR');
 
-  const created = await PositioningPosition.create({
-    companyId,
-    name,
-    zone,
-    durationMinutes
-  });
-  return created;
+    const lat = Number(payload?.latitude);
+    const lng = Number(payload?.longitude);
+    const created = await PositioningPosition.create({
+      companyId,
+      name,
+      zone,
+      durationMinutes,
+      latitude: Number.isFinite(lat) ? lat : null,
+      longitude: Number.isFinite(lng) ? lng : null,
+      locationNote: payload?.locationNote ? String(payload.locationNote) : null
+    });
+    return created;
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
 }
 
 async function deletePosition(id, user) {
-  assertMysql();
-  const companyId = resolveCompanyId(user);
-  const pid = safeId(id);
-  const row = await PositioningPosition.findOne({ where: { id: pid, companyId } });
-  if (!row) throw new HttpError(404, 'Position introuvable', 'NOT_FOUND');
-  await row.destroy();
-  return true;
+  try {
+    assertMysql();
+    const companyId = resolveCompanyId(user);
+    const pid = safeId(id);
+    const row = await PositioningPosition.findOne({ where: { id: pid, companyId } });
+    if (!row) throw new HttpError(404, 'Position introuvable', 'NOT_FOUND');
+    await row.destroy();
+    return true;
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
 }
 
 /**
@@ -114,7 +172,12 @@ async function comparePositions(ids = [], user) {
         |> sort(columns: ["_time"])
     `;
 
-    const points = await queryFluxRows(fluxQuery);
+    let points = [];
+    try {
+      points = await queryFluxRows(fluxQuery);
+    } catch {
+      points = [];
+    }
     const values = points.map((p) => Number(p._value)).filter((n) => Number.isFinite(n));
     const s = stats(values);
 
@@ -180,22 +243,57 @@ async function comparePositions(ids = [], user) {
 }
 
 async function finalizePosition(positionId, user) {
-  assertMysql();
-  const companyId = resolveCompanyId(user);
-  const pid = safeId(positionId);
+  try {
+    assertMysql();
+    const companyId = resolveCompanyId(user);
+    const pid = safeId(positionId);
 
-  return sequelize.transaction(async (t) => {
-    const row = await PositioningPosition.findOne({ where: { id: pid, companyId }, transaction: t, lock: t.LOCK.UPDATE });
+    return await sequelize.transaction(async (t) => {
+      const row = await PositioningPosition.findOne({ where: { id: pid, companyId }, transaction: t, lock: t.LOCK.UPDATE });
+      if (!row) throw new HttpError(404, 'Position introuvable', 'NOT_FOUND');
+
+      await PositioningPosition.update(
+        { isFinal: false, finalizedAt: null },
+        { where: { companyId }, transaction: t }
+      );
+
+      await row.update({ isFinal: true, finalizedAt: new Date() }, { transaction: t });
+      return row;
+    });
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
+}
+
+async function updatePositionNote(positionId, payload, user) {
+  try {
+    assertMysql();
+    const companyId = resolveCompanyId(user);
+    const pid = safeId(positionId);
+    const row = await PositioningPosition.findOne({ where: { id: pid, companyId } });
     if (!row) throw new HttpError(404, 'Position introuvable', 'NOT_FOUND');
 
-    await PositioningPosition.update(
-      { isFinal: false, finalizedAt: null },
-      { where: { companyId }, transaction: t }
-    );
-
-    await row.update({ isFinal: true, finalizedAt: new Date() }, { transaction: t });
+    const patch = {};
+    if (payload?.locationNote !== undefined) patch.locationNote = String(payload.locationNote || '').trim() || null;
+    if (payload?.latitude !== undefined) {
+      const lat = Number(payload.latitude);
+      patch.latitude = Number.isFinite(lat) ? lat : null;
+    }
+    if (payload?.longitude !== undefined) {
+      const lng = Number(payload.longitude);
+      patch.longitude = Number.isFinite(lng) ? lng : null;
+    }
+    if (payload?.retentionRate !== undefined) {
+      const retention = Number(payload.retentionRate);
+      patch.retentionRate = Number.isFinite(retention) ? retention : null;
+    }
+    await row.update(patch);
     return row;
-  });
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
 }
 
 module.exports = {
@@ -203,6 +301,7 @@ module.exports = {
   createPosition,
   deletePosition,
   comparePositions,
-  finalizePosition
+  finalizePosition,
+  updatePositionNote
 };
 

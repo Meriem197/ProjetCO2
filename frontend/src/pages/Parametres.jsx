@@ -20,7 +20,7 @@ import api, { resolveApiErrorMessage, unwrapApiData } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 
 const DEFAULT_SETTINGS = {
-  limitGood: 600,
+  limitGood: 800,
   limitWarning: 1000,
   limitCritical: 1400,
   aiModel: "standard",
@@ -35,6 +35,8 @@ const DEFAULT_SETTINGS = {
   slackWebhookUrl: "",
   notifyWebhookDiscord: false,
   discordWebhookUrl: "",
+  companyName: "",
+  factoryLocation: "",
 };
 
 const PREDICTION_MODELS = [
@@ -50,12 +52,12 @@ function roleLabel(t, role) {
 }
 
 function ppmBadgeClass(ppm, limits) {
-  const g = Number(limits.limitGood);
-  const w = Number(limits.limitWarning);
+  const g = Number(limits.limitGood) || 800;
+  const w = Number(limits.limitWarning) || 1000;
   if (!Number.isFinite(ppm)) return "status-badge";
-  if (ppm < g) return "status-badge status-badge-good";
-  if (ppm < w) return "status-badge status-badge-warning";
-  return "status-badge status-badge-critical";
+  if (ppm < g) return "inline-flex rounded-full border px-3 py-1 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border-emerald-500/30";
+  if (ppm <= w) return "inline-flex rounded-full border px-3 py-1 text-xs font-semibold text-amber-500 bg-amber-500/10 border-amber-500/30";
+  return "inline-flex rounded-full border px-3 py-1 text-xs font-semibold text-rose-500 bg-rose-500/10 border-rose-500/30";
 }
 
 function Field({ label, children }) {
@@ -342,10 +344,28 @@ export default function Parametres() {
                       slackWebhookUrl: settings.slackWebhookUrl,
                       notifyWebhookDiscord: settings.notifyWebhookDiscord,
                       discordWebhookUrl: settings.discordWebhookUrl,
+                      companyName: settings.companyName,
+                      factoryLocation: settings.factoryLocation,
                     })
                   }
                 />
                 <div className="grid gap-2">
+                  <Field label="Entreprise">
+                    <input
+                      className="ui-pill w-full"
+                      value={settings.companyName}
+                      onChange={(e) => setSettings((s) => ({ ...s, companyName: e.target.value }))}
+                      disabled={isClient}
+                    />
+                  </Field>
+                  <Field label="Localisation usine">
+                    <input
+                      className="ui-pill w-full"
+                      value={settings.factoryLocation}
+                      onChange={(e) => setSettings((s) => ({ ...s, factoryLocation: e.target.value }))}
+                      disabled={isClient}
+                    />
+                  </Field>
                   <SwitchRow
                     label={t("settings.notify.email")}
                     checked={settings.notifyEmail}

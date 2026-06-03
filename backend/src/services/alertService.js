@@ -1,4 +1,4 @@
-const { Alert, Sensor, EdgeDevice, ProductionLine, Site } = require('../models');
+const { Alert, Sensor, EdgeDevice, ProductionLine, Site, CompanySetting } = require('../models');
 const { HttpError } = require('../utils/httpError');
 
 function assertMysql() {
@@ -81,7 +81,22 @@ async function persistMqttAlert({ mqttSensorId, valuePpm, thresholdPpm, message 
   }
 }
 
+async function resolveThresholdForSensor(sensorUid, fallback = 1000) {
+  if (String(process.env.MYSQL_ENABLED || 'true').toLowerCase() === 'false') return fallback;
+  try {
+    const sensor = await findSensorHierarchy(sensorUid);
+    const companyId = sensor?.edgeDevice?.productionLine?.site?.companyId;
+    if (!companyId) return fallback;
+    const settings = await CompanySetting.findOne({ where: { companyId } });
+    const threshold = Number(settings?.limitWarning);
+    return Number.isFinite(threshold) ? threshold : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 async function listAlerts(query = {}, user) {
+  try {
   assertMysql();
   const where = { companyId: resolveCompanyIdFromUserOrQuery(user, query) };
 
@@ -101,6 +116,10 @@ async function listAlerts(query = {}, user) {
     order: [['triggered_at', 'DESC']],
     limit
   });
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(500, 'Service temporairement indisponible');
+  }
 }
 
 function normalizeStatus(status) {
@@ -131,6 +150,7 @@ async function updateAlertStatus(id, status, user) {
 
 module.exports = {
   persistMqttAlert,
+  resolveThresholdForSensor,
   listAlerts,
   updateAlertStatus
 };

@@ -3,10 +3,12 @@ import AppLayout from "@/components/layout/AppLayout";
 import { GlassCard } from "@/components/ui/glass-card";
 import { CO2HistoryChart } from "@/components/charts/CO2Charts";
 import { useCO2Data } from "@/hooks/useCO2Data";
-import { Download, FileText, Radio } from "lucide-react";
+import { Download, FileText, Loader2, Radio } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { getCo2Metrology } from "@/lib/co2Metrology";
 import jsPDF from "jspdf";
 export default function Surveillance() {
-    const { history, threshold, sensor, isLive } = useCO2Data();
+    const { history, threshold, sensor, isLive, isLoading, limits } = useCO2Data();
     const stats = useMemo(() => {
         const ppms = history.map((p) => p.ppm);
         return {
@@ -62,18 +64,31 @@ export default function Surveillance() {
 
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { l: "Minimum", v: stats.min, color: "text-status-good" },
-            { l: "Moyenne", v: stats.avg, color: "text-primary" },
-            { l: "Maximum", v: stats.max, color: "text-status-critical" },
-        ].map((k, i) => (<GlassCard key={k.l} delay={i * 0.05}>
+            { l: "Minimum", v: stats.min, ppm: stats.min },
+            { l: "Moyenne", v: stats.avg, ppm: stats.avg },
+            { l: "Maximum", v: stats.max, ppm: stats.max },
+        ].map((k, i) => {
+              const tone = getCo2Metrology(k.ppm, limits);
+              return (
+            <GlassCard key={k.l} delay={i * 0.05}>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{k.l}</p>
-              <p className={`mt-2 text-3xl font-bold tabular-nums ${k.color}`}>{k.v} <span className="text-base text-muted-foreground">ppm</span></p>
-            </GlassCard>))}
+              <p className={`mt-2 text-3xl font-bold tabular-nums ${tone.textClass}`}>{k.v} <span className="text-base text-muted-foreground">ppm</span></p>
+            </GlassCard>
+              );
+            })}
         </div>
 
         <GlassCard delay={0.15}>
           <h3 className="mb-4 text-base font-semibold">Évolution CO₂ — 24 dernières heures</h3>
-          <CO2HistoryChart data={history} threshold={threshold} height={340}/>
+          {isLoading ? (
+            <div className="flex h-[340px] items-center justify-center text-muted-foreground">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Chargement...
+            </div>
+          ) : history.length === 0 ? (
+            <EmptyState className="h-[340px]" title="Historique vide" description="Aucune donnée sur les dernières 24 heures." />
+          ) : (
+            <CO2HistoryChart data={history} threshold={threshold} height={340}/>
+          )}
         </GlassCard>
 
       </div>

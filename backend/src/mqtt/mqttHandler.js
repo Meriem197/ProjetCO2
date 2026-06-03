@@ -209,7 +209,8 @@ function startMqttClient(io, writeApi) {
       });
 
       // Seuil lu a la volee depuis l'env (permet de changer sans redeployer si process manager recharge l'env).
-      const alertThreshold = getCo2AlertThresholdPpm();
+      const defaultThreshold = getCo2AlertThresholdPpm();
+      const alertThreshold = await alertService.resolveThresholdForSensor(measurement.sensorId, defaultThreshold);
       if (measurement.value >= alertThreshold) {
         console.warn(
           `[ALERTE CO2] ${measurement.value} ppm (seuil ${alertThreshold}) capteur ${sensorId}`

@@ -1,0 +1,11 @@
+-- Exécuter manuellement si MYSQL_SYNC_MODE=off
+ALTER TABLE positioning_positions
+  ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7) NULL,
+  ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7) NULL,
+  ADD COLUMN IF NOT EXISTS location_note TEXT NULL,
+  ADD COLUMN IF NOT EXISTS retention_rate DECIMAL(6,2) NULL,
+  ADD COLUMN IF NOT EXISTS avg_co2_ppm DECIMAL(10,3) NULL;
+
+ALTER TABLE company_settings
+  ADD COLUMN IF NOT EXISTS company_name VARCHAR(255) NULL,
+  ADD COLUMN IF NOT EXISTS factory_location VARCHAR(255) NULL;

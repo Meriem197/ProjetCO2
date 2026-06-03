@@ -286,9 +286,15 @@ async function getClassificationStats({
       |> keep(columns: ["_time", "_value"])
     `;
 
+  // stats() n'existe pas en Flux standard — on calcule max/mean/min séparément
+  // et on les réunit avec union() pour obtenir 3 lignes avec un tag "statistic"
   const bucketizeAndStatsQuery = `
+    import "internal/debug"
     base = ${bucketizedQuery}
-    base |> stats()
+    maxRow   = base |> max()   |> map(fn: (r) => ({r with statistic: "max"}))
+    meanRow  = base |> mean()  |> map(fn: (r) => ({r with statistic: "mean"}))
+    minRow   = base |> min()   |> map(fn: (r) => ({r with statistic: "min"}))
+    union(tables: [maxRow, meanRow, minRow])
   `;
 
   const currentQuery = `
@@ -425,4 +431,3 @@ module.exports = {
   isValidWindow,
   isValidAggregation,
 };
-

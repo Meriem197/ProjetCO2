@@ -19,6 +19,9 @@ function errorHandler(err, req, res, next) {
   console.error(`[ERROR][${req.requestId || '-'}] ${err.message}`, err.stack);
 
   const status = err.status || 500;
+  if (status >= 500) {
+    return res.status(status).json({ error: 'Service temporairement indisponible' });
+  }
   const message = err.message || 'Erreur interne du serveur';
   const code = err.code || 'INTERNAL_ERROR';
   const details = process.env.NODE_ENV === 'development'

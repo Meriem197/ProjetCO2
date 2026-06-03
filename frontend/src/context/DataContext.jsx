@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import api, { USE_MOCK, resolveApiErrorMessage, unwrapApiData, unwrapApiMeta } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { CO2_DEFAULT_LIMITS, co2StatusLevel } from "@/lib/co2Metrology";
 import {
   generateAlerts,
   generateForecast,
@@ -66,9 +67,11 @@ export function DataProvider({ children }) {
     temperature: null,
     humidity: null,
   });
-  const [threshold, setThresholdState] = useState(() => {
-    const v = localStorage.getItem("airsense_threshold");
-    return v ? Number(v) : 1000;
+  const [threshold, setThresholdState] = useState(CO2_DEFAULT_LIMITS.moderate);
+  const [limits, setLimits] = useState({
+    healthy: CO2_DEFAULT_LIMITS.healthy,
+    moderate: CO2_DEFAULT_LIMITS.moderate,
+    critical: 1400,
   });
   const [horizonMinutes, setHorizonMinutes] = useState(30);
   const [sensorId, setSensorId] = useState(ENV_SENSOR_ID);
@@ -87,6 +90,42 @@ export function DataProvider({ children }) {
     setThresholdState(v);
     localStorage.setItem("airsense_threshold", String(v));
   };
+
+  const refreshAlerts = useCallback(async (activeSensorId = sensorId) => {
+    if (!isAuthenticated || USE_MOCK) return;
+    try {
+      const alertsUrl = activeSensorId
+        ? `/alerts?sensorId=${encodeURIComponent(activeSensorId)}`
+        : "/alerts";
+      const alertsRes = await api.get(alertsUrl);
+      const alertsData = unwrapApiData(alertsRes.data);
+      setAlerts(Array.isArray(alertsData) ? alertsData.map(normalizeAlertRow).filter(Boolean) : []);
+    } catch {
+      setAlerts([]);
+    }
+  }, [isAuthenticated, sensorId]);
+
+  useEffect(() => {
+    if (!isAuthenticated || USE_MOCK) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get("/settings");
+        const data = unwrapApiData(res.data);
+        if (cancelled || !data) return;
+        const healthy = Number(data.limitGood) || CO2_DEFAULT_LIMITS.healthy;
+        const moderate = Number(data.limitWarning) || CO2_DEFAULT_LIMITS.moderate;
+        const critical = Number(data.limitCritical) || 1400;
+        setLimits({ healthy, moderate, critical });
+        setThresholdState(moderate);
+      } catch {
+        // garde les valeurs par défaut
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   /** Résout le capteur : actifs Influx → liste MySQL → VITE_SENSOR_ID */
   useEffect(() => {
@@ -226,27 +265,7 @@ export function DataProvider({ children }) {
           setError(null);
         }
 
-        try {
-          const statsUrl = sensorId
-            ? `/co2/stats?sensorId=${encodeURIComponent(sensorId)}&start=-24h`
-            : "/co2/stats?start=-24h";
-          const statsRes = await api.get(statsUrl);
-          const stats = unwrapApiData(statsRes.data);
-          if (typeof stats?.mean === "number" && Number.isFinite(stats.mean)) {
-            setThresholdState((current) => (current > 0 ? current : Math.round(stats.mean + 300)));
-          }
-        } catch {
-          // non bloquant
-        }
-
-        try {
-          const alertsUrl = sensorId ? `/alerts?sensorId=${encodeURIComponent(sensorId)}` : "/alerts";
-          const alertsRes = await api.get(alertsUrl);
-          const alertsData = unwrapApiData(alertsRes.data);
-          setAlerts(Array.isArray(alertsData) ? alertsData.map(normalizeAlertRow).filter(Boolean) : []);
-        } catch {
-          setAlerts([]);
-        }
+        await refreshAlerts(sensorId);
 
         setLastUpdate(Date.now());
       } catch (err) {
@@ -269,7 +288,7 @@ export function DataProvider({ children }) {
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
-  }, [isAuthenticated, sensorId]);
+  }, [isAuthenticated, sensorId, refreshAlerts]);
 
   useEffect(() => {
     if (!isAuthenticated || USE_MOCK) return;
@@ -330,7 +349,7 @@ export function DataProvider({ children }) {
   }, [isAuthenticated, sensorId, token]);
 
   const current = history[history.length - 1]?.ppm ?? 0;
-  const status = current < 600 ? "good" : current < threshold ? "warning" : "critical";
+  const status = co2StatusLevel(current, limits);
 
   useEffect(() => {
     if (!isAuthenticated || USE_MOCK) {
@@ -415,7 +434,9 @@ export function DataProvider({ children }) {
     alerts,
     sensor,
     threshold,
+    limits,
     setThreshold,
+    refreshAlerts,
     horizonMinutes,
     setHorizonMinutes,
     isLive: sensor.mqtt === "connected",

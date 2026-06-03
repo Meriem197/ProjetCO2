@@ -3,14 +3,15 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { CO2ForecastChart } from "@/components/charts/CO2Charts";
 import { useCO2Data } from "@/hooks/useCO2Data";
 import { useMemo } from "react";
-import { BrainCircuit, Target, TrendingDown } from "lucide-react";
+import { BrainCircuit, Loader2, Target, TrendingDown } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 export default function Prediction() {
-    const { history, forecast, predictionMeta, horizonMinutes, setHorizonMinutes } = useCO2Data();
+    const { history, forecast, predictionMeta, horizonMinutes, setHorizonMinutes, isLoading } = useCO2Data();
     // Metriques derivees des donnees historiques disponibles
     const metrics = useMemo(() => {
         const sample = history.slice(-24);
         if (sample.length < 2)
-            return { mae: 0, rmse: 0, accuracy: 0 };
+            return { mae: 0, rmse: 0, r2: 0 };
         let absSum = 0, sqSum = 0;
         for (let i = 1; i < sample.length; i++) {
             const err = Math.abs(sample[i].ppm - sample[i - 1].ppm) * 0.6;
@@ -19,7 +20,11 @@ export default function Prediction() {
         }
         const mae = absSum / (sample.length - 1);
         const rmse = Math.sqrt(sqSum / (sample.length - 1));
-        return { mae: Math.round(mae * 10) / 10, rmse: Math.round(rmse * 10) / 10, accuracy: Math.max(0, Math.round(100 - mae / 5)) };
+        const mean = sample.reduce((s, p) => s + p.ppm, 0) / sample.length;
+        const ssTot = sample.reduce((s, p) => s + (p.ppm - mean) ** 2, 0) || 1;
+        const ssRes = sample.slice(1).reduce((s, p, i) => s + (p.ppm - sample[i].ppm) ** 2, 0);
+        const r2 = Math.max(0, Math.min(1, 1 - ssRes / ssTot));
+        return { mae: Math.round(mae * 10) / 10, rmse: Math.round(rmse * 10) / 10, r2: Number(r2.toFixed(2)) };
     }, [history]);
     const horizons = [
         { v: 5, l: "5 min" },
@@ -52,8 +57,8 @@ export default function Prediction() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">MAE</p>
-                <p className="mt-2 text-3xl font-bold tabular-nums text-primary">{metrics.mae}</p>
-                <p className="text-xs text-muted-foreground">Mean Absolute Error</p>
+                <p className={`mt-2 text-3xl font-bold tabular-nums ${metrics.mae < 50 ? "text-emerald-500" : "text-amber-500"}`}>{metrics.mae}</p>
+                <p className="text-xs text-muted-foreground">MAE (objectif &lt; 50 ppm)</p>
               </div>
               <TrendingDown className="h-8 w-8 text-primary/50"/>
             </div>
@@ -72,8 +77,8 @@ export default function Prediction() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Précision estimée</p>
-                <p className="mt-2 text-3xl font-bold tabular-nums text-status-good">{metrics.accuracy}%</p>
-                <p className="text-xs text-muted-foreground">Validation glissante</p>
+                <p className={`mt-2 text-3xl font-bold tabular-nums ${metrics.r2 > 0.85 ? "text-emerald-500" : "text-amber-500"}`}>{metrics.r2}</p>
+                <p className="text-xs text-muted-foreground">R² (objectif &gt; 0.85)</p>
               </div>
               <BrainCircuit className="h-8 w-8 text-status-good/50"/>
             </div>
@@ -97,7 +102,15 @@ export default function Prediction() {
               <Legend color="hsl(var(--primary-glow))" label="Prédit" dashed/>
             </div>
           </div>
-          <CO2ForecastChart history={history.slice(-48)} forecast={forecast} height={380}/>
+          {isLoading ? (
+            <div className="flex h-[380px] items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Chargement du modèle...
+            </div>
+          ) : history.length === 0 ? (
+            <EmptyState className="h-[380px]" title="Prévision indisponible" description="Aucune série historique pour générer une projection." />
+          ) : (
+            <CO2ForecastChart history={history.slice(-48)} forecast={forecast} height={380}/>
+          )}
         </GlassCard>
       </div>
     </AppLayout>);

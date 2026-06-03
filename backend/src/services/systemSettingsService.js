@@ -26,11 +26,92 @@ function clampInt(value, { min, max, fallback }) {
 }
 
 async function getOrCreateSettings(companyId) {
-  const [row] = await CompanySetting.findOrCreate({
-    where: { companyId },
-    defaults: { companyId }
-  });
-  return row;
+  try {
+    const [row] = await CompanySetting.findOrCreate({
+      where: { companyId },
+      defaults: { companyId },
+      // Limiter aux colonnes connues du modèle (évite "Unknown column" si la table a des champs legacy)
+      attributes: [
+        'id', 'companyId', 'limitGood', 'limitWarning', 'limitCritical',
+        'aiModel', 'horizonMinutes', 'samplingIntervalSeconds',
+        'wifiSsid', 'mqttBrokerUrl', 'mqttTopic',
+        'notifyEmail', 'notifyPush',
+        'notifyWebhookSlack', 'slackWebhookUrl',
+        'notifyWebhookDiscord', 'discordWebhookUrl',
+        'createdAt', 'updatedAt'
+      ]
+    });
+    return row;
+  } catch (err) {
+    // Fallback : si la table a des colonnes legacy inconnues du modèle (ex: company_name),
+    // on tente un findOne simple avec SELECT explicite
+    if (err.message && err.message.includes('Unknown column')) {
+      const { sequelize } = require('../models');
+      const [results] = await sequelize.query(
+        `SELECT id, company_id, limit_good, limit_warning, limit_critical,
+                ai_model, horizon_minutes, sampling_interval_seconds,
+                wifi_ssid, mqtt_broker_url, mqtt_topic,
+                notify_email, notify_push,
+                notify_webhook_slack, slack_webhook_url,
+                notify_webhook_discord, discord_webhook_url,
+                created_at, updated_at
+           FROM company_settings WHERE company_id = :companyId LIMIT 1`,
+        { replacements: { companyId }, type: 'SELECT' }
+      );
+      if (results && results.length > 0) {
+        // Retourner un objet avec les valeurs brutes mappées
+        const r = results[0];
+        return {
+          id: r.id,
+          companyId: r.company_id,
+          limitGood: r.limit_good,
+          limitWarning: r.limit_warning,
+          limitCritical: r.limit_critical,
+          aiModel: r.ai_model,
+          horizonMinutes: r.horizon_minutes,
+          samplingIntervalSeconds: r.sampling_interval_seconds,
+          wifiSsid: r.wifi_ssid,
+          mqttBrokerUrl: r.mqtt_broker_url,
+          mqttTopic: r.mqtt_topic,
+          notifyEmail: !!r.notify_email,
+          notifyPush: !!r.notify_push,
+          notifyWebhookSlack: !!r.notify_webhook_slack,
+          slackWebhookUrl: r.slack_webhook_url,
+          notifyWebhookDiscord: !!r.notify_webhook_discord,
+          discordWebhookUrl: r.discord_webhook_url,
+          update: async (patch) => {
+            const setClauses = [];
+            const vals = {};
+            const fieldMap = {
+              limitGood: 'limit_good', limitWarning: 'limit_warning', limitCritical: 'limit_critical',
+              aiModel: 'ai_model', horizonMinutes: 'horizon_minutes',
+              samplingIntervalSeconds: 'sampling_interval_seconds',
+              wifiSsid: 'wifi_ssid', mqttBrokerUrl: 'mqtt_broker_url', mqttTopic: 'mqtt_topic',
+              notifyEmail: 'notify_email', notifyPush: 'notify_push',
+              notifyWebhookSlack: 'notify_webhook_slack', slackWebhookUrl: 'slack_webhook_url',
+              notifyWebhookDiscord: 'notify_webhook_discord', discordWebhookUrl: 'discord_webhook_url'
+            };
+            for (const [k, v] of Object.entries(patch)) {
+              if (fieldMap[k]) { setClauses.push(`${fieldMap[k]} = :${k}`); vals[k] = v; }
+            }
+            if (setClauses.length) {
+              await sequelize.query(
+                `UPDATE company_settings SET ${setClauses.join(', ')} WHERE company_id = :companyId`,
+                { replacements: { ...vals, companyId }, type: 'UPDATE' }
+              );
+            }
+          }
+        };
+      }
+      // Créer une ligne par défaut
+      await sequelize.query(
+        `INSERT INTO company_settings (company_id) VALUES (:companyId)`,
+        { replacements: { companyId } }
+      );
+      return getOrCreateSettings(companyId);
+    }
+    throw err;
+  }
 }
 
 async function getSettings(query = {}, user) {

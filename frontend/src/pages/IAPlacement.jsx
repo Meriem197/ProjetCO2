@@ -1,57 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import L from "leaflet";
 import AppLayout from "@/components/layout/AppLayout";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import api, { resolveApiErrorMessage, unwrapApiData } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BrainCircuit, MapPin, Plus, Trash2, Wand2, CheckCircle2 } from "lucide-react";
+import { BrainCircuit, Loader2, MapPin, Plus, Save, Trash2, CircleOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getCo2Metrology } from "@/lib/co2Metrology";
 
-function normalizePositionRow(row) {
+function normalizePositionRow(row, idx = 0) {
   if (!row || typeof row !== "object") return null;
   const id = row.id ?? row.positionId;
   if (id == null) return null;
+  const fallbackLat = 36.8065 + idx * 0.0012;
+  const fallbackLng = 10.1815 + idx * 0.0012;
   return {
     id: String(id),
     name: row.name ?? row.positionName ?? "Position",
     zone: row.zone ?? row.locationZone ?? "—",
     durationMinutes: Number(row.durationMinutes ?? row.duration_minutes ?? 30),
     isFinal: Boolean(row.isFinal ?? row.is_final),
+    avgPpm: Number(row.avgCo2Ppm ?? row.avg_co2_ppm ?? 0),
+    retentionRate: Number(row.retentionRate ?? row.retention_rate ?? 0),
+    locationNote: row.locationNote ?? row.location_note ?? "",
+    latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : fallbackLat,
+    longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : fallbackLng,
   };
 }
 
-function normalizeComparePayload(payload) {
-  const rawPositions = Array.isArray(payload?.positions) ? payload.positions : [];
-  const positions = rawPositions.map((p) => {
-    const metrics = p?.metrics || {};
-    return {
-      id: String(p?.id ?? ""),
-      name: p?.name ?? "Position",
-      zone: p?.zone ?? "—",
-      durationMinutes: Number(p?.durationMinutes ?? p?.duration_minutes ?? 30),
-      metrics: {
-        co2Capture: Number(metrics.co2Capture ?? metrics.co2_capture ?? 0),
-        stability: Number(metrics.stability ?? 0),
-        interference: Number(metrics.interference ?? 0),
-        score: Number(metrics.score ?? 0),
-        confidence: Number(metrics.confidence ?? 0),
-      },
-    };
+function markerIcon(color) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:16px;height:16px;border-radius:999px;background:${color};border:2px solid #0f172a;box-shadow:0 0 0 4px ${color}30;"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   });
-
-  const recommendedId = payload?.recommended?.id != null ? String(payload.recommended.id) : null;
-  const recommendedFromList = positions.find((p) => String(p.id) === recommendedId) || null;
-  const recommended = payload?.recommended
-    ? {
-        id: recommendedId,
-        name: payload.recommended.name ?? recommendedFromList?.name ?? "—",
-        confidence: Number(payload.recommended.confidence ?? recommendedFromList?.metrics?.confidence ?? 0),
-        score: Number(payload.recommended.score ?? recommendedFromList?.metrics?.score ?? 0),
-      }
-    : null;
-
-  return { positions, recommended };
 }
 
 export default function IAPlacement() {
@@ -69,12 +55,9 @@ export default function IAPlacement() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [compareLoading, setCompareLoading] = useState(false);
-  const [compareError, setCompareError] = useState("");
-  const [compareResult, setCompareResult] = useState(null);
-
-  const selectedCount = selectedIds.size;
+  const [selectedId, setSelectedId] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+  const selected = useMemo(() => positions.find((p) => p.id === selectedId) || positions[0] || null, [positions, selectedId]);
 
   useEffect(() => {
     let mounted = true;
@@ -84,7 +67,9 @@ export default function IAPlacement() {
         const res = await api.get("/positioning/positions");
         const rows = unwrapApiData(res.data);
         if (!mounted) return;
-        setPositions(Array.isArray(rows) ? rows.map(normalizePositionRow).filter(Boolean) : []);
+        const normalized = Array.isArray(rows) ? rows.map((item, idx) => normalizePositionRow(item, idx)).filter(Boolean) : [];
+        setPositions(normalized);
+        if (normalized[0]) setSelectedId(String(normalized[0].id));
         setError("");
       } catch (e) {
         if (!mounted) return;
@@ -99,20 +84,8 @@ export default function IAPlacement() {
     };
   }, [t]);
 
-  const chartRows = useMemo(() => {
-    const items = compareResult?.positions || [];
-    return items.map((p) => ({
-      position: String(p.name || p.id).slice(0, 16),
-      co2Capture: Math.round(Number(p.metrics?.co2Capture ?? 0)),
-      stability: Math.round(Number(p.metrics?.stability ?? 0)),
-      interference: Math.round(Number(p.metrics?.interference ?? 0)),
-      score: Math.round(Number(p.metrics?.score ?? 0)),
-    }));
-  }, [compareResult]);
-
   const addPosition = async () => {
     setError("");
-    setCompareError("");
     const name = form.name.trim();
     const zone = form.zone.trim();
     const durationMinutes = Number(form.durationMinutes);
@@ -123,9 +96,19 @@ export default function IAPlacement() {
 
     try {
       setSaving(true);
-      const res = await api.post("/positioning/positions", { name, zone, durationMinutes });
-      const created = normalizePositionRow(unwrapApiData(res.data));
-      if (created) setPositions((prev) => [created, ...prev]);
+      const fallbackCenter = positions[0] || {};
+      const res = await api.post("/positioning/positions", {
+        name,
+        zone,
+        durationMinutes,
+        latitude: fallbackCenter.latitude ?? 36.8065,
+        longitude: fallbackCenter.longitude ?? 10.1815,
+      });
+      const created = normalizePositionRow(unwrapApiData(res.data), positions.length + 1);
+      if (created) {
+        setPositions((prev) => [created, ...prev]);
+        setSelectedId(created.id);
+      }
       setForm({ name: "", zone: "", durationMinutes: 30 });
     } catch (e) {
       setError(resolveApiErrorMessage(e, t("placement.add_error")));
@@ -138,54 +121,32 @@ export default function IAPlacement() {
     try {
       await api.delete(`/positioning/positions/${encodeURIComponent(id)}`);
       setPositions((prev) => prev.filter((p) => String(p.id) !== String(id)));
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(String(id));
-        return next;
+      setSelectedId((prev) => (String(prev) === String(id) ? null : prev));
+    } catch (_e) {
+      // non bloquant
+    }
+  };
+
+  const saveNote = async () => {
+    if (!canOperate || !selected) return;
+    try {
+      setSavingNote(true);
+      await api.patch(`/positioning/positions/${encodeURIComponent(selected.id)}`, {
+        locationNote: selected.locationNote,
+        latitude: selected.latitude,
+        longitude: selected.longitude,
       });
-    } catch (_e) {
-      // non bloquant
-    }
-  };
-
-  const toggleSelected = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      const key = String(id);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const runCompare = async () => {
-    setCompareError("");
-    setCompareResult(null);
-    if (!canOperate) return;
-    if (selectedIds.size < 2) {
-      setCompareError(t("placement.select_compare"));
-      return;
-    }
-    try {
-      setCompareLoading(true);
-      const ids = Array.from(selectedIds).join(",");
-      const res = await api.get(`/positioning/compare?ids=${encodeURIComponent(ids)}`);
-      setCompareResult(normalizeComparePayload(unwrapApiData(res.data)));
     } catch (e) {
-      setCompareError(resolveApiErrorMessage(e, t("placement.compare_error")));
+      setError(resolveApiErrorMessage(e, t("placement.compare_error")));
     } finally {
-      setCompareLoading(false);
+      setSavingNote(false);
     }
   };
 
-  const finalize = async () => {
-    if (!canOperate || !compareResult?.recommended?.id) return;
-    try {
-      await api.post("/positioning/finalize", { positionId: compareResult.recommended.id });
-    } catch (_e) {
-      // non bloquant
-    }
-  };
+  const avgPpm = selected?.avgPpm || 0;
+  const tone = getCo2Metrology(avgPpm);
+  const qualityLabel = tone.label;
+  const retention = selected?.retentionRate || Math.max(55, Math.min(98, Math.round(100 - Math.max(0, avgPpm - 500) / 12)));
 
   return (
     <AppLayout title={t("placement.title")} subtitle={t("placement.subtitle")}>
@@ -247,18 +208,7 @@ export default function IAPlacement() {
             {error && <div className="text-xs text-status-critical">{error}</div>}
 
             <div className="pt-1 flex items-center justify-between gap-2">
-              <button
-                onClick={runCompare}
-                disabled={!canOperate || selectedCount < 2 || compareLoading}
-                className="ui-ghost ui-ghost--primary"
-                type="button"
-              >
-                <Wand2 className={`h-4 w-4 ${compareLoading ? "animate-spin" : ""}`} />
-                {t("placement.run_compare")}
-              </button>
-              <span className="ui-badge text-muted-foreground">
-                {t("placement.selection")}: <span className="text-foreground">{selectedCount}</span>
-              </span>
+              <span className="ui-badge text-muted-foreground">{positions.length} points d'audit</span>
             </div>
           </div>
 
@@ -279,23 +229,17 @@ export default function IAPlacement() {
               )}
 
               {positions.map((p) => {
-                const selected = selectedIds.has(String(p.id));
+                const selectedRow = String(selectedId) === String(p.id);
                 return (
                   <motion.div
                     key={p.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`rounded-2xl border px-3 py-2 ${selected ? "border-primary/50 bg-primary/10" : "border-border/60 bg-background/30"}`}
+                    className={`rounded-2xl border px-3 py-2 ${selectedRow ? "border-primary/50 bg-primary/10" : "border-border/60 bg-background/30"}`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <label className="flex items-start gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          className="mt-1 h-4 w-4 accent-primary"
-                          checked={selected}
-                          onChange={() => toggleSelected(p.id)}
-                        />
+                      <label className="flex items-start gap-2 cursor-pointer select-none" onClick={() => setSelectedId(String(p.id))}>
                         <div className="min-w-0">
                           <div className="text-sm font-bold truncate">{p.name}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
@@ -338,79 +282,80 @@ export default function IAPlacement() {
           </GlassCard>
 
           <GlassCard className="p-4">
-            {compareError && <div className="mb-2 text-xs text-status-critical">{compareError}</div>}
-            {!compareResult && !compareLoading && (
-              <div className="rounded-2xl border border-border/60 bg-background/30 p-4 text-sm text-muted-foreground">
-                {t("placement.hint_select")}
+            {!loadingPositions && positions.length === 0 && (
+              <div className="flex h-[420px] flex-col items-center justify-center text-muted-foreground">
+                <CircleOff className="h-8 w-8" />
+                <p className="mt-2 text-sm">Aucun audit spatial disponible.</p>
               </div>
             )}
-            {compareLoading && <div className="text-sm text-muted-foreground">{t("placement.comparing")}</div>}
-
-            {!!compareResult && (
-              <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
-                <div className="rounded-2xl border border-border/60 bg-background/30 p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("placement.chart_title")}
-                  </div>
-                  <div className="mt-2 h-[320px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartRows} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="hsl(var(--border) / 0.6)" />
-                        <XAxis dataKey="position" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground) / 0.6)" />
-                        <YAxis width={36} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground) / 0.6)" domain={[0, 100]} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "hsl(var(--popover) / 0.92)",
-                            border: "1px solid hsl(var(--border) / 0.8)",
-                            borderRadius: 12,
-                            fontSize: 12,
-                          }}
-                        />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Bar dataKey="co2Capture" name={t("placement.capture_co2")} fill="hsl(var(--primary))" fillOpacity={0.75} />
-                        <Bar dataKey="stability" name={t("placement.stability")} fill="hsl(var(--status-good))" fillOpacity={0.65} />
-                        <Bar dataKey="interference" name={t("placement.interference")} fill="hsl(var(--status-warning))" fillOpacity={0.65} />
-                        <Bar dataKey="score" name={t("placement.score")} fill="hsl(var(--status-critical))" fillOpacity={0.55} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+            {loadingPositions && <Skeleton className="h-[420px] w-full rounded-xl" />}
+            {!loadingPositions && positions.length > 0 && (
+              <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+                <div className="h-[420px] rounded-xl border border-slate-800 overflow-hidden">
+                  <MapContainer center={[selected?.latitude ?? 36.8065, selected?.longitude ?? 10.1815]} zoom={13} style={{ height: "100%", width: "100%" }}>
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    />
+                    {positions.map((p) => {
+                      const pTone = getCo2Metrology(p.avgPpm || 0);
+                      return (
+                        <Marker key={p.id} position={[p.latitude, p.longitude]} icon={markerIcon(pTone.markerColor)} eventHandlers={{ click: () => setSelectedId(p.id) }}>
+                          <Popup>
+                            <p className="font-semibold">{p.name}</p>
+                            <p className="text-xs">{p.zone} · {p.avgPpm || "N/A"} ppm</p>
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
+                  </MapContainer>
                 </div>
 
-                <div
-                  className="rounded-2xl p-[1px]"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsl(var(--primary)) 0%, rgba(217,70,239,0.9) 55%, rgba(34,197,94,0.85) 100%)",
-                    boxShadow: "0 0 0 2px hsl(var(--primary) / 0.10), 0 0 40px hsl(var(--primary) / 0.14)",
-                  }}
-                >
-                  <div className="h-full rounded-2xl bg-background/40 p-4 backdrop-blur-xl">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("placement.recommended_title")}
+                <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-4">
+                  {!selected ? (
+                    <p className="text-sm text-muted-foreground">Sélectionnez une session.</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold">{selected.name}</h3>
+                        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone.badgeClass}`}>{qualityLabel}</span>
                       </div>
-                    </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{selected.zone}</p>
 
-                    <div className="mt-3">
-                      <div className="text-xs text-muted-foreground">{t("placement.recommended_spot")}</div>
-                      <div className="mt-1 text-base font-extrabold">{compareResult.recommended?.name || "—"}</div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        {t("placement.confidence")}:{" "}
-                        <span className="font-mono font-semibold text-foreground">
-                          {Number(compareResult.recommended?.confidence ?? 0).toFixed(1)}%
-                        </span>
+                      <div className="mt-4 grid gap-2 text-sm">
+                        <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2">
+                          <span>Durée de l'audit</span><span className="font-semibold">{selected.durationMinutes} min</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2">
+                          <span>Qualité de l'air</span><span className="font-semibold">{qualityLabel}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2">
+                          <span>Taux de rétention</span><span className="font-semibold">{retention}%</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2">
+                          <span>CO₂ moyen</span><span className="font-semibold">{avgPpm || "N/A"} ppm</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-4 grid gap-2">
-                      <button onClick={finalize} disabled={!canOperate} className="ui-ghost ui-ghost--primary w-full" type="button">
-                        <CheckCircle2 className="h-4 w-4" /> {t("placement.finalize")}
-                      </button>
-                      {!canOperate && (
-                        <div className="text-[11px] text-muted-foreground">{t("placement.finalize_locked")}</div>
-                      )}
-                    </div>
-                  </div>
+                      <div className="mt-4">
+                        <label className="ui-label">Note descriptive de l'emplacement</label>
+                        <textarea
+                          className="ui-pill w-full min-h-[110px] resize-y"
+                          value={selected.locationNote || ""}
+                          onChange={(e) =>
+                            setPositions((prev) =>
+                              prev.map((p) => (p.id === selected.id ? { ...p, locationNote: e.target.value } : p))
+                            )
+                          }
+                          placeholder="Ex: zone proche d'une entrée d'air, circulation forte à 14h."
+                          disabled={!canOperate}
+                        />
+                        <button onClick={saveNote} disabled={!canOperate || savingNote} className="ui-ghost ui-ghost--primary mt-2 w-full" type="button">
+                          {savingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Sauvegarder la note
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

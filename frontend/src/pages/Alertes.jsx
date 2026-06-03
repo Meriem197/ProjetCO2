@@ -14,6 +14,7 @@ import {
   ExternalLink,
   RefreshCw,
   Archive,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -22,7 +23,7 @@ import { useTranslation } from "react-i18next";
 
 export default function Alertes() {
   const { t, i18n } = useTranslation();
-  const { alerts } = useCO2Data();
+  const { alerts, isLoading, refreshAlerts } = useCO2Data();
   const { hasRole } = useAuth();
   const canOperate = hasRole("ADMIN", "TECHNICIAN");
   const [filter, setFilter] = useState("all");
@@ -79,6 +80,7 @@ export default function Alertes() {
   const updateStatus = async (alertRow, next) => {
     try {
       await api.patch(`/alerts/${alertRow.id}`, { status: next });
+      await refreshAlerts(alertRow.sensorId);
     } catch (_e) {
       // rafraîchi par polling/socket
     }
@@ -175,7 +177,13 @@ export default function Alertes() {
               </div>
 
               <div className="max-h-[560px] overflow-auto">
-                {filtered.length === 0 && (
+                {isLoading && (
+                  <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
+                    Chargement des alertes...
+                  </div>
+                )}
+                {!isLoading && filtered.length === 0 && (
                   <div className="px-4 py-10 text-center text-sm text-muted-foreground">{t("alerts.empty")}</div>
                 )}
                 {filtered.map((a) => (

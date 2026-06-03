@@ -19,6 +19,11 @@ module.exports = function definePositioningPosition(sequelize) {
 
       // Optionnel: si le capteur a un identifiant distinct par position (sinon tag positionId suffit)
       sensorId: { type: DataTypes.STRING(128), allowNull: true, field: 'sensor_id' },
+      latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true, field: 'latitude' },
+      longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true, field: 'longitude' },
+      locationNote: { type: DataTypes.TEXT, allowNull: true, field: 'location_note' },
+      retentionRate: { type: DataTypes.DECIMAL(6, 2), allowNull: true, field: 'retention_rate' },
+      avgCo2Ppm: { type: DataTypes.DECIMAL(10, 3), allowNull: true, field: 'avg_co2_ppm' },
 
       isFinal: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_final' },
       finalizedAt: { type: DataTypes.DATE, allowNull: true, field: 'finalized_at' }
