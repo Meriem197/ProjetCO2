@@ -1,0 +1,1 @@
+["co2_ppm", "temp_c", "hum_pct", "heure_sin", "heure_cos", "jour_sin", "jour_cos", "est_weekend", "co2_lag_1", "co2_lag_2", "co2_lag_3", "co2_lag_6", "co2_lag_12", "co2_lag_24", "co2_roll_mean_12", "co2_roll_std_12", "co2_roll_mean_48", "co2_diff_1", "co2_diff_6"]
